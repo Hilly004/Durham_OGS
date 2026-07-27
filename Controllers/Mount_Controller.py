@@ -29,7 +29,7 @@ class MountController(QObject):
         self.status_changed.emit('Mount disconnected')
 
     def is_connected(self):
-        return self.mount.check_connected()
+        return self.mount.is_connected()
     
 
     #### Movement ####
@@ -92,11 +92,11 @@ class MountController(QObject):
 
     def slew_to_park(self):
         self.mount.slew_to_park()
-        self.status_changed('Slewing to target')
+        self.status_changed.emit('Slewing to target')
 
     def set_park_position(self):
         self.mount.set_park()
-        self.status_changed('Parking mount')
+        self.status_changed.emit('Parking mount')
 
     def unpark(self):
         self.mount.unpark()

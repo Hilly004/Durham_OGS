@@ -24,6 +24,9 @@ class MountConnection:
             self.connected = True
 
         except socket.error:
+            if self.socket:
+                self.socket.close()
+                self.socket = None
             self.connected = False
             raise
 
@@ -36,17 +39,7 @@ class MountConnection:
 
 
     def check_connection(self):
-        sock = socket.socket()
-        try:
-            sock.settimeout(2)
-            sock.connect((self.host,self.port))
-            return True
-        except socket.error as e:
-            print(f'Connection failed: {e}')
-            return False
-        
-        finally:
-            sock.close()
+        return self.connected
 
 
     def send(self,message):
@@ -54,22 +47,29 @@ class MountConnection:
         if not self.connected:
             raise RuntimeError('Mount not connected')
         
-        command = ':U2#' + message
+        command = ':U2#'
 
         self.socket.sendall(
             command.encode()
         )
 
+        self.socket.sendall(
+            message.encode()
+        )
 
     def send_receive(self,message):
 
         if not self.connected:
             raise RuntimeError('Mount not connected')
         
-        command = ':U2#' + message
+        command = ':U2#'
 
         self.socket.sendall(
             command.encode()
+        )
+
+        self.socket.sendall(
+            message.encode()
         )
 
         data = self.socket.recv(1024)

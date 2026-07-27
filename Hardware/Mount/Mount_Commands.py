@@ -15,7 +15,8 @@ class TenMicronMount:
         # Send a command without waiting for a response
         return self.connection.send(command)
 
-
+    def is_connected(self):
+        return self.connection.check_connection()
 
     #########################################################################
     #                       Movement Commands
