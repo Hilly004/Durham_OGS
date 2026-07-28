@@ -1,5 +1,5 @@
 import socket
-
+from Utilities.Config import *
 class MountConnection:
 
     def __init__(self, host:str, port:int):
@@ -22,12 +22,13 @@ class MountConnection:
             )
 
             self.connected = True
+            self.socket.sendall(b':U2#')
+            print('Socket connected:',self.connected)
 
-        except socket.error:
-            if self.socket:
-                self.socket.close()
-                self.socket = None
+        except socket.error as e:
+            print(e)
             self.connected = False
+
             raise
 
     def disconnect(self):
@@ -37,41 +38,43 @@ class MountConnection:
             self.socket = None
         self.connected = False
 
-
-    def check_connection(self):
+    def is_connected(self):
+        print('MountConnection.connected =', self.connected)
         return self.connected
-
-
+    
     def send(self,message):
 
         if not self.connected:
             raise RuntimeError('Mount not connected')
         
-        command = ':U2#'
+        try:
+            self.socket.sendall(
+                message.encode()
+            )
 
-        self.socket.sendall(
-            command.encode()
-        )
-
-        self.socket.sendall(
-            message.encode()
-        )
+        except socket.error:
+            self.connected = False
+            raise
 
     def send_receive(self,message):
 
         if not self.connected:
             raise RuntimeError('Mount not connected')
         
-        command = ':U2#'
+        try:
+            self.socket.sendall(
+                message.encode()
+            )
 
-        self.socket.sendall(
-            command.encode()
-        )
+            data = self.socket.recv(1024)
 
-        self.socket.sendall(
-            message.encode()
-        )
+            return data.decode()
+    
+        except socket.error:
+            self.connected = False
+            raise
 
-        data = self.socket.recv(1024)
+        
+    
 
-        return data.decode()
+    

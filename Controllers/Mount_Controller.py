@@ -1,28 +1,40 @@
-from PySide6.QtCore import QObject, Signal
+from PySide6.QtCore import QObject, Signal, QTimer
+
 
 class MountController(QObject):
+    
     status_changed = Signal(str)
     position_changed = Signal(dict)
     connection_changed = Signal(bool)
 
     def __init__(self,mount):
         super().__init__()
+
         self.mount = mount
 
+        self.refresh_timer = QTimer(self)
+        self.refresh_timer.timeout.connect(self.refresh)
 
     #### Connection ####
 
     def connect(self):
         try:
             self.mount.connect()
+            print('Controller:', self.mount.is_connected())
+
             self.connection_changed.emit(True)
             self.status_changed.emit('Mount connected')
 
+            self.refresh_timer.start(1000)
+        
         except Exception as e:
             self.connection_changed.emit(False)
             self.status_changed.emit(f'Connection failed: {e}')
 
     def disconnect(self):
+
+        self.refresh_timer.stop()
+
         self.mount.disconnect()
 
         self.connection_changed.emit(False)
@@ -31,7 +43,22 @@ class MountController(QObject):
     def is_connected(self):
         return self.mount.is_connected()
     
+    def refresh(self):
+        connected = self.mount.is_connected()
 
+        print('Refresh sees:', connected)
+        self.connection_changed.emit(connected)
+
+        if not connected:
+            return
+        
+        try:
+            self.update_position()
+
+        except Exception as e:
+            print(e)
+
+        
     #### Movement ####
 
     def move_north(self):

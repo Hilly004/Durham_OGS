@@ -16,7 +16,13 @@ class TenMicronMount:
         return self.connection.send(command)
 
     def is_connected(self):
-        return self.connection.check_connection()
+        return self.connection.is_connected()
+    
+    def connect(self):
+        return self.connection.connect()
+    
+    def disconnect(self):
+        return self.connection.disconnect()
 
     #########################################################################
     #                       Movement Commands

@@ -17,16 +17,17 @@ class MountPage(QWidget):
         self.controller = controller
 
         self.controller.connection_changed.connect(self.update_connection)
-        self.controller.position_changed.connect(self.update_position)
-        self.controller.status_changed.connect(self.update_status)
-
+        
 
         self.connection_label = QLabel('Checking...')
         self.ra_label = QLabel('Checking...')
         self.dec_label = QLabel('Checking...')
         self.status_label = QLabel('Ready')
 
+        self.refresh_button = QPushButton('Refresh')
         self.connect_button = QPushButton('Connect')
+
+        self.refresh_button.clicked.connect(self.controller.refresh)
 
         self.connect_button.clicked.connect(self.controller.connect)
 
@@ -38,7 +39,8 @@ class MountPage(QWidget):
         status_layout.addWidget(self.ra_label,1,1)
         status_layout.addWidget(QLabel('Declination:'),2,0)
         status_layout.addWidget(self.dec_label,2,1)
-        status_layout.addWidget(self.connect_button,3,0,1,2)
+        status_layout.addWidget(self.refresh_button,3,0,1,2)
+        status_layout.addWidget(self.connect_button,4,0,1,2)
 
         status_box.setLayout(status_layout)
 
@@ -48,6 +50,7 @@ class MountPage(QWidget):
     
 
     def update_connection(self,connected):
+        print('update_connection:', connected)
         if connected:
             self.connection_label.setText('Connected')
         else:

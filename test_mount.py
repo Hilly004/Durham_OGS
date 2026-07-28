@@ -12,10 +12,4 @@ mount = TenMicronMount(connection)
 
 control = MountController(mount)
 
-try:
-    connection.connect()
-    print(control.get_dec())
-    connection.disconnect()
-    
-except Exception as e:
-    print(e)
+print(connection.connect())
