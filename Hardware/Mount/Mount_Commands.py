@@ -8,21 +8,26 @@ class TenMicronMount:
 
     def query(self, command):
         # Send a command and wait for a response
+
         return self.connection.send_receive(command)
 
 
     def command(self, command):
         # Send a command without waiting for a response
+        
         return self.connection.send(command)
 
     def is_connected(self):
-        return self.connection.is_connected()
+        return self.connection.connected
     
     def connect(self):
         return self.connection.connect()
     
     def disconnect(self):
         return self.connection.disconnect()
+    
+
+
 
     #########################################################################
     #                       Movement Commands

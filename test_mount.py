@@ -12,4 +12,11 @@ mount = TenMicronMount(connection)
 
 control = MountController(mount)
 
-print(connection.connect())
+control.connect()
+
+control.is_connected()
+control.unpark()
+print(control.get_mount_status())
+print(control.update_position())
+
+control.disconnect()

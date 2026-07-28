@@ -9,69 +9,54 @@ class MountConnection:
         self.socket = None
         self.connected = False
 
+
     def connect(self):
-
+        if self.connected and self.socket is not None:
+            return
+        
         try:
-            self.socket = socket.socket(socket.AF_INET,
-                                         socket.SOCK_STREAM)
-            
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.settimeout(2)
-
-            self.socket.connect(
-                (self.host,self.port)
-            )
+            self.socket.connect((self.host, self.port))
+        
+            self.socket.sendall(b':U2#')
 
             self.connected = True
-            self.socket.sendall(b':U2#')
-            print('Socket connected:',self.connected)
-
+            print('Connected')
         except socket.error as e:
-            print(e)
+            print(f'Socket error: {e}')
+            if self.socket:
+                self.socket.close()
+                self.socket = None
             self.connected = False
-
+            print('Not connected')
             raise
 
     def disconnect(self):
-
         if self.socket:
             self.socket.close()
             self.socket = None
+
         self.connected = False
+        print('Disconnected')
 
-    def is_connected(self):
-        print('MountConnection.connected =', self.connected)
-        return self.connected
-    
     def send(self,message):
-
-        if not self.connected:
+        if not self.connected or self.socket is None:
             raise RuntimeError('Mount not connected')
-        
-        try:
-            self.socket.sendall(
-                message.encode()
-            )
+        self.socket.sendall(message.encode())
 
-        except socket.error:
-            self.connected = False
-            raise
+    def receive(self):
+        return self.socket.recv(1024).decode()
 
     def send_receive(self,message):
-
         if not self.connected:
             raise RuntimeError('Mount not connected')
-        
         try:
-            self.socket.sendall(
-                message.encode()
-            )
-
-            data = self.socket.recv(1024)
-
-            return data.decode()
-    
+            self.send(message)
+            return self.receive()
+        
         except socket.error:
-            self.connected = False
+            self.disconnect()
             raise
 
         

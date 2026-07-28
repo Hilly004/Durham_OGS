@@ -12,35 +12,20 @@ class MountController(QObject):
 
         self.mount = mount
 
-        self.refresh_timer = QTimer(self)
-        self.refresh_timer.timeout.connect(self.refresh)
-
     #### Connection ####
 
     def connect(self):
-        try:
-            self.mount.connect()
-            print('Controller:', self.mount.is_connected())
-
-            self.connection_changed.emit(True)
-            self.status_changed.emit('Mount connected')
-
-            self.refresh_timer.start(1000)
-        
-        except Exception as e:
-            self.connection_changed.emit(False)
-            self.status_changed.emit(f'Connection failed: {e}')
+        success = self.mount.connect()
+        self.connection_changed.emit(self.mount.is_connected())
+        return success
 
     def disconnect(self):
-
-        self.refresh_timer.stop()
-
-        self.mount.disconnect()
-
-        self.connection_changed.emit(False)
-        self.status_changed.emit('Mount disconnected')
-
+        success = self.mount.disconnect()
+        self.connection_changed.emit(self.mount.is_connected())
+        return success
+    
     def is_connected(self):
+
         return self.mount.is_connected()
     
     def refresh(self):
@@ -49,14 +34,12 @@ class MountController(QObject):
         print('Refresh sees:', connected)
         self.connection_changed.emit(connected)
 
-        if not connected:
-            return
-        
-        try:
-            self.update_position()
+        if connected:
+            try:
+                self.position_changed.emit(self.update_position())
 
-        except Exception as e:
-            print(e)
+            except Exception as e:
+                print(e)
 
         
     #### Movement ####
@@ -114,6 +97,7 @@ class MountController(QObject):
             'dec':self.mount.get_telescope_dec()
         }
         self.position_changed.emit(position)
+        return position
 
     #### Home & Park ####
 

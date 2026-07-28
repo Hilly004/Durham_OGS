@@ -16,49 +16,56 @@ class MountPage(QWidget):
 
         self.controller = controller
 
-        self.controller.connection_changed.connect(self.update_connection)
-        
-
-        self.connection_label = QLabel('Checking...')
-        self.ra_label = QLabel('Checking...')
-        self.dec_label = QLabel('Checking...')
-        self.status_label = QLabel('Ready')
-
-        self.refresh_button = QPushButton('Refresh')
-        self.connect_button = QPushButton('Connect')
-
-        self.refresh_button.clicked.connect(self.controller.refresh)
-
-        self.connect_button.clicked.connect(self.controller.connect)
+        ##### STATUS #####
 
         status_box = QGroupBox('Status')
         status_layout = QGridLayout()
-        status_layout.addWidget(QLabel('Connection status:'),0,0)
-        status_layout.addWidget(self.connection_label,0,1)
-        status_layout.addWidget(QLabel('Right ascension:'),1,0)
-        status_layout.addWidget(self.ra_label,1,1)
-        status_layout.addWidget(QLabel('Declination:'),2,0)
-        status_layout.addWidget(self.dec_label,2,1)
-        status_layout.addWidget(self.refresh_button,3,0,1,2)
-        status_layout.addWidget(self.connect_button,4,0,1,2)
+
+        
+
+        self.connection_status = QLabel('Checking...')
+        self.right_ascension = QLabel('Checking...')
+        self.declination = QLabel('Checking...')
+
+        self.connect_button = QPushButton('Connect')
+        self.disconnect_button = QPushButton('Disconnect')
+        self.position_button = QPushButton('Get position')
+
+        self.connect_button.clicked.connect(self.controller.connect)
+        self.disconnect_button.clicked.connect(self.controller.disconnect)
+        self.position_button.clicked.connect(self.controller.update_position)
+
+        status_layout.addWidget(self.connect_button,3,0)
+        status_layout.addWidget(self.disconnect_button,3,1)
+        status_layout.addWidget(self.position_button,4,0,1,2)
+
+        status_layout.addWidget(QLabel('Connection status:'),2,0)
+        status_layout.addWidget(self.connection_status,2,1)
+
+        status_layout.addWidget(QLabel('Right Ascension:'),0,0)
+        status_layout.addWidget(self.right_ascension,0,1)
+
+        status_layout.addWidget(QLabel('Declination:'),1,0)
+        status_layout.addWidget(self.declination,1,1)
 
         status_box.setLayout(status_layout)
 
+        layout = QGridLayout()
 
-        main_layout = QGridLayout(self)
-        main_layout.addWidget(status_box,0,0)
-    
+        layout.addWidget(status_box)
 
-    def update_connection(self,connected):
-        print('update_connection:', connected)
+
+        self.setLayout(layout)
+
+        self.controller.connection_changed.connect(self.update_connection_status)
+        self.controller.position_changed.connect(self.update_position)
+
+    def update_connection_status(self, connected):
         if connected:
-            self.connection_label.setText('Connected')
+            self.connection_status.setText('Connected')
         else:
-            self.connection_label.setText('Disconnected')
+            self.connection_status.setText('Disconnected')
 
     def update_position(self, position):
-        self.ra_label.setText(str(position['ra']))
-        self.dec_label.setText(str(position['dec']))
-        
-    def update_status(self,status):
-        self.status_label.setText(status)
+        self.right_ascension.setText(position['ra'])
+        self.declination.setText(position['dec'])
