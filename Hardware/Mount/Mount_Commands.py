@@ -355,7 +355,7 @@ class TenMicronMount:
 
     def slew_to_park(self):
         # Slew the mount to the stored park position
-        message = ':hP#'
+        message = ':KA#'
         return self.command(message)
 
 

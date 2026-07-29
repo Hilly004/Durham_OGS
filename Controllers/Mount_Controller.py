@@ -1,11 +1,13 @@
 from PySide6.QtCore import QObject, Signal, QTimer
-
+import time
 
 class MountController(QObject):
     
     status_changed = Signal(str)
     position_changed = Signal(dict)
+    position_aa_changed = Signal(dict)
     connection_changed = Signal(bool)
+    park_changed = Signal(bool)
 
     def __init__(self,mount):
         super().__init__()
@@ -15,20 +17,28 @@ class MountController(QObject):
     #### Connection ####
 
     def connect(self):
-        success = self.mount.connect()
-        self.connection_changed.emit(self.mount.is_connected())
-        return success
+        self.status_changed.emit('Connecting...')
+        try:
+            self.mount.connect()
+            self.connection_changed.emit(True)
+            self.status_changed.emit('Connected')
+
+        except Exception as e:
+            self.connection_changed.emit(False)
+            self.status_changed.emit(f'Connection failed: {e}')
 
     def disconnect(self):
-        success = self.mount.disconnect()
-        self.connection_changed.emit(self.mount.is_connected())
-        return success
+        self.status_changed.emit('Disconnecting...')
+        self.mount.disconnect()
+        self.connection_changed.emit(False)
+        self.status_changed.emit('Mount not connected')
+        
     
     def is_connected(self):
 
         return self.mount.is_connected()
     
-    def refresh(self):
+    #def refresh(self):
         connected = self.mount.is_connected()
 
         print('Refresh sees:', connected)
@@ -98,19 +108,45 @@ class MountController(QObject):
         }
         self.position_changed.emit(position)
         return position
+    
+    def update_position_aa(self):
+        position_aa = {
+            'alt':self.mount.get_telescope_altitude(),
+            'az':self.mount.get_telescope_azimuth()
+        }
+        self.position_aa_changed.emit(position_aa)
+        return position_aa
+    
+    def get_info(self):
+        list = self.mount.get_info().split(',')
+        info = {
+            'ra':list[0],
+            'dec':list[1],
+            'dir':list[2],
+            'az':list[3],
+            'alt':list[4],
+            'jul':list[5],
+            'stat':list[6], #Gstat status
+            'slew_stat':list[7]
+        }
+        return list
 
     #### Home & Park ####
 
     def slew_to_park(self):
         self.mount.slew_to_park()
-        self.status_changed.emit('Slewing to target')
+        self.park_changed.emit(True)
 
     def set_park_position(self):
         self.mount.set_park()
-        self.status_changed.emit('Parking mount')
+        self.park_changed.emit(True)
+        
 
     def unpark(self):
         self.mount.unpark()
+        self.park_changed.emit(False)
+
+    
 
     #### Set ####
 
