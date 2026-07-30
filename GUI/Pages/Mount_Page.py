@@ -10,12 +10,14 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt, QTimer
 import time
 
+
 class MountPage(QWidget):
 
-    def __init__(self,controller):
+    def __init__(self,controller, main_window):
         super().__init__()
 
         self.controller = controller
+        self.main_window = main_window
 
         ##### STATUS #####
 
@@ -32,12 +34,18 @@ class MountPage(QWidget):
         self.connection_button = QPushButton('Connect')
         self.connection_button.clicked.connect(self.toggle_connection)
         self.position_button = QPushButton('Get position')
+        self.export_button = QPushButton('Export')
+
 
         self.position_button.clicked.connect(self.controller.update_position)
         self.position_button.clicked.connect(self.controller.update_position_aa)
 
+        self.export_button.clicked.connect(
+            lambda: self.controller.logger.export_to_csv('mount_log.csv'))
+
         status_layout.addWidget(self.connection_button,5,0,1,2)
         status_layout.addWidget(self.position_button,6,0,1,2)
+        status_layout.addWidget(self.export_button,7,0,1,2)
 
         status_layout.addWidget(QLabel('Connection status:'),2,0)
         status_layout.addWidget(self.connection_status,2,1)
@@ -54,7 +62,7 @@ class MountPage(QWidget):
         status_layout.addWidget(QLabel('Azimuth:'),4,0)
         status_layout.addWidget(self.azimuth,4,1)
 
-        status_layout.addWidget(self.park_status,7,0,1,2)
+        status_layout.addWidget(self.park_status,8,0,1,2)
 
         status_box.setLayout(status_layout)
 
@@ -122,6 +130,13 @@ class MountPage(QWidget):
 
         cam_box = QGroupBox('Camera')
         cam_layout = QGridLayout()
+
+        self.point_button = QPushButton('Go to pointing page')
+        self.point_button.clicked.connect(self.main_window.show_point)
+
+        cam_layout.addWidget(self.point_button)
+
+        cam_box.setLayout(cam_layout)
 
         layout = QGridLayout()
 

@@ -14,8 +14,8 @@ mount = TenMicronMount(connection)
 
 control = MountController(mount)
 
-control.connect()
+connection.connect()
 
-print(control.get_info())
+print(connection.send_receive(':TLEG#'))
 
-control.disconnect()
+connection.disconnect()

@@ -132,12 +132,6 @@ class TenMicronMount:
         return self.query(message)
 
 
-    def get_target_altitude(self):
-        # Get target altitude
-        message = ':Ga#'
-        return self.query(message)
-
-
     def get_date(self):
         # Get current mount date
         message = ':GC#'
@@ -147,12 +141,6 @@ class TenMicronMount:
     def get_telescope_dec(self):
         # Get current telescope declination
         message = ':GD#'
-        return self.query(message)
-
-
-    def get_target_dec(self):
-        # Get target declination
-        message = ':Gd#'
         return self.query(message)
 
 
@@ -258,12 +246,6 @@ class TenMicronMount:
         return self.query(message)
 
 
-    def get_target_ra(self):
-        # Get target right ascension
-        message = ':Gr#'
-        return self.query(message)
-
-
     def get_atmospheric_pressure(self):
         # Get atmospheric pressure used for refraction correction
         message = ':GRPRS#'
@@ -336,12 +318,6 @@ class TenMicronMount:
         return self.query(message)
 
 
-    def get_target_azimuth(self):
-        # Get target azimuth
-        message = ':Gz#'
-        return self.query(message)
-
-
     def get_point_state(self):
         # Get pointing state
         message = ':pS#'
@@ -376,8 +352,31 @@ class TenMicronMount:
         message = ':h?#'
         return self.query(message)
 
+    #########################################################################
+    #                         Get Targeting
+    #########################################################################
 
+    def get_target_azimuth(self):
+        # Get target azimuth
+        message = ':Gz#'
+        return self.query(message)
 
+    def get_target_ra(self):
+        # Get target right ascension
+        message = ':Gr#'
+        return self.query(message)
+    
+    def get_target_dec(self):
+        # Get target declination
+        message = ':Gd#'
+        return self.query(message)
+    
+
+    def get_target_altitude(self):
+        # Get target altitude
+        message = ':Ga#'
+        return self.query(message)
+    
     #########################################################################
     #                         Movement Commands
     #########################################################################

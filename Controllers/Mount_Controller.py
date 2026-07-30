@@ -1,5 +1,6 @@
 from PySide6.QtCore import QObject, Signal, QTimer
 import time
+from Utilities.Mount_Logger import MountLogger
 
 class MountController(QObject):
     
@@ -12,8 +13,12 @@ class MountController(QObject):
     def __init__(self,mount):
         super().__init__()
 
+
+        self.logger = MountLogger()
         self.mount = mount
 
+        self.log_timer = QTimer(self)
+        self.log_timer.timeout.connect(self.log_mount_state)
     #### Connection ####
 
     def connect(self):
@@ -22,12 +27,14 @@ class MountController(QObject):
             self.mount.connect()
             self.connection_changed.emit(True)
             self.status_changed.emit('Connected')
+            self.log_timer.start(1000)
 
         except Exception as e:
             self.connection_changed.emit(False)
             self.status_changed.emit(f'Connection failed: {e}')
 
     def disconnect(self):
+        self.log_timer.stop()
         self.status_changed.emit('Disconnecting...')
         self.mount.disconnect()
         self.connection_changed.emit(False)
@@ -37,21 +44,7 @@ class MountController(QObject):
     def is_connected(self):
 
         return self.mount.is_connected()
-    
-    #def refresh(self):
-        connected = self.mount.is_connected()
-
-        print('Refresh sees:', connected)
-        self.connection_changed.emit(connected)
-
-        if connected:
-            try:
-                self.position_changed.emit(self.update_position())
-
-            except Exception as e:
-                print(e)
-
-        
+     
     #### Movement ####
 
     def move_north(self):
@@ -87,6 +80,9 @@ class MountController(QObject):
     def stop_motion(self):
         self.mount.stop_all_motion()
 
+    def stop_tracking(self):
+        self.mount.stop_tracking()
+
     #### Get ####
 
     def get_ra(self):
@@ -100,6 +96,9 @@ class MountController(QObject):
 
     def get_slew_status(self):
         return self.mount.get_slew_status()
+    
+    def get_tracking_status(self):
+        return self.mount.get_tracking_status()
     
     def update_position(self):
         position = {
@@ -118,19 +117,25 @@ class MountController(QObject):
         return position_aa
     
     def get_info(self):
-        list = self.mount.get_info().split(',')
+        field = self.mount.get_info().split(',')
         info = {
-            'ra':list[0],
-            'dec':list[1],
-            'dir':list[2],
-            'az':list[3],
-            'alt':list[4],
-            'jul':list[5],
-            'stat':list[6], #Gstat status
-            'slew_stat':list[7]
+            'ra':field[0],
+            'dec':field[1],
+            'dir':field[2],
+            'az':field[3],
+            'alt':field[4],
+            'jul':field[5],
+            'stat':field[6], #Gstat status
+            'slew_stat':field[7]
         }
-        return list
+        return info
 
+    def log_mount_state(self):
+        if not self.mount.is_connected():
+            return
+
+        self.logger.log(self.get_info()
+        )
     #### Home & Park ####
 
     def slew_to_park(self):
@@ -156,6 +161,13 @@ class MountController(QObject):
     def set_target_ra(self,ra):
         self.mount.set_target_ra(ra)
 
+    def set_target_azimuth(self,az):
+        self.mount.set_target_azimuth(az)
+
+    def set_target_altitude(self,alt):
+        self.mount.set_target_altitude(alt)
+
+
     def set_site_lat(self,lat):
         self.mount.set_site_latitude(lat)
 
@@ -163,3 +175,16 @@ class MountController(QObject):
         self.mount.set_site_longitude(long)
 
 
+    #### Targeting ####
+
+    def get_target_ra(self):
+        return self.mount.get_target_ra()
+    
+    def get_target_dec(self):
+        return self.mount.get_target_dec()
+    
+    def get_target_azimuth(self):
+        return self.mount.get_target_azimuth()
+    
+    def get_target_altitude(self):
+        return self.mount.get_target_altitude()

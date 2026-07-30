@@ -3,11 +3,9 @@ import sys
 from PySide6.QtWidgets import QApplication
 
 
-from Hardware.Connections.Mount_Connection import MountConnection
-from Hardware.Mount.Mount_Commands import TenMicronMount
-from Controllers.Mount_Controller import MountController
+from factory import build_observatory
 
-from GUI.Pages.Mount_Page import MountPage
+from GUI.Main_Window import MainWindow
 
 from Utilities.Config import *
 
@@ -17,12 +15,10 @@ from Utilities.Config import *
 def main():
     app = QApplication(sys.argv)
 
-    mount_connection = MountConnection(host,port)
-    mount = TenMicronMount(mount_connection)
-    mount_controller = MountController(mount)
-    mount_window = MountPage(mount_controller)
+    observatory = build_observatory()
 
-    mount_window.show()
+    window = MainWindow(observatory)
+    window.show()
 
     sys.exit(app.exec())
 
