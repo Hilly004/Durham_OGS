@@ -1,6 +1,6 @@
 from PySide6.QtCore import QObject, Signal, QTimer
 import time
-from Utilities.Mount_Logger import MountLogger
+from Utilities.Observatory_Logger import ObservatoryLogger
 
 class MountController(QObject):
     
@@ -14,7 +14,7 @@ class MountController(QObject):
         super().__init__()
 
 
-        self.logger = MountLogger()
+        self.logger = ObservatoryLogger()
         self.mount = mount
 
         self.log_timer = QTimer(self)

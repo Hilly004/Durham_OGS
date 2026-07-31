@@ -3,7 +3,7 @@ from datetime import datetime
 import csv
 
 @dataclass
-class MountLogEntry:
+class ObservatoryLogEntry:
     timestamp: datetime
     ra: str
     dec: str
@@ -12,14 +12,14 @@ class MountLogEntry:
     status: str
     slew_status: str
 
-class MountLogger:
+class ObservatoryLogger:
 
     def __init__(self):
         self.entries = []
 
     def log(self,info):
         self.entries.append(
-            MountLogEntry(
+            ObservatoryLogEntry(
                 timestamp=datetime.now(),
                 ra=info['ra'],
                 dec=info['dec'],
@@ -58,3 +58,5 @@ class MountLogger:
                     entry.status,
                     entry.slew_status
                 ])
+
+            print('Log exported to CSV')

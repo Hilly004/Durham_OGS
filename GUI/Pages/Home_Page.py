@@ -1,4 +1,5 @@
-from PySide6.QtWidgets import QWidget, QGridLayout, QLabel, QGroupBox, QPushButton
+from PySide6.QtWidgets import QWidget, QGridLayout, QLabel, QGroupBox, QPushButton,QHBoxLayout
+
 
 class HomePage(QWidget):
 
@@ -8,17 +9,28 @@ class HomePage(QWidget):
         self.controller = controller
         self.main_window = main_window
 
-        connection_box = QGroupBox('')
-        connection_layout = QGridLayout()
+        page_box = QGroupBox('')
+        page_layout = QGridLayout()
 
-        #self.dome_connection_button = QPushButton()
-        self.mount_connection_button = QPushButton('Connect')
-        self.mount_connection_button.clicked.connect(self.toggle_connection)
+        dashboard_button = QPushButton('Dashboard')
+        mount_button = QPushButton('Mount')
+        dome_button = QPushButton('Dome')
+        weather_button = QPushButton('Weather')
+        camera_button = QPushButton('Camera')
+        settings_button = QPushButton('Settings')
+        logs_button = QPushButton('Logs')
 
-        connection_layout.addWidget(self.mount_connection_button)
+        page_layout.addWidget(dashboard_button)
+        page_layout.addWidget(mount_button)
+        page_layout.addWidget(dome_button)
+        page_layout.addWidget(weather_button)
+        page_layout.addWidget(camera_button)
+        page_layout.addWidget(settings_button)
+        page_layout.addWidget(logs_button)
 
-        connection_box.setLayout(connection_layout)
+        page_box.setLayout(page_layout)
 
+        #####
 
         status_box = QGroupBox('Status')
         status_layout = QGridLayout()
@@ -36,8 +48,9 @@ class HomePage(QWidget):
         status_box.setLayout(status_layout)
 
         layout = QGridLayout()
-        layout.addWidget(status_box,1,0)
-        layout.addWidget(connection_box,0,0)
+        layout.addWidget(page_box,0,0)
+        layout.addWidget(status_box,1,0,1,2)
+        layout.addWidget(QLabel('Box'),0,1)
 
         self.setLayout(layout)
 
@@ -48,13 +61,15 @@ class HomePage(QWidget):
     def update_connection_status(self,connected):
         if connected:
             self.mount_connection_status.setText('Connected')
+            #self.mount_connection_button.setText('Disconnect')
         else:
             self.mount_connection_status.setText('Not connected')
+            #self.mount_connection_button.setText('Connect')
 
     def toggle_connection(self):
         if self.controller.is_connected(): 
             self.controller.disconnect()
-            self.mount_connection_button.setText('Connect')
+
         else:
             self.controller.connect()
-            self.mount_connection_button.setText('Disconnect')
+            

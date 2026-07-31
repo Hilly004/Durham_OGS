@@ -8,6 +8,8 @@ from PySide6.QtGui import QAction
 from GUI.Pages.Mount_Page import MountPage
 from GUI.Widgets.Mount.Pointing import PointingWidget
 from GUI.Pages.Home_Page import HomePage
+from GUI.Pages.Authentication import Authenticator
+from GUI.Pages.Password_Page import PasswordWindow
 
 class MainWindow(QMainWindow):
 
@@ -15,18 +17,27 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.observatory = observatory
+
+        self.auth = Authenticator()
         
         self.home_page = HomePage(observatory.mount_controller,self)
         self.mount_page = MountPage(observatory.mount_controller,self)
         self.point_page = PointingWidget(observatory.mount_controller,self)
 
+        self.login_page = PasswordWindow(self.auth)
+
         self.stack = QStackedWidget()
 
+        self.stack.addWidget(self.login_page)
         self.stack.addWidget(self.home_page)
         self.stack.addWidget(self.mount_page)
         self.stack.addWidget(self.point_page)
 
+        self.stack.setCurrentWidget(self.login_page)
+
         self.setCentralWidget(self.stack)
+
+        self.login_page.authenticated.connect(self.login_success)
 
         self.create_menu()
 
@@ -57,3 +68,11 @@ class MainWindow(QMainWindow):
         navigate_menu.addAction(mount_button)
 
         self.menuBar().setEnabled(True)
+
+    def login_success(self):
+        self.stack.setCurrentWidget(self.home_page)
+        self.menuBar().setEnabled(True)
+
+    def closeEvent(self, event):
+        self.observatory.shutdown()
+        event.accept()

@@ -1,3 +1,5 @@
+import serial
+
 from Utilities.Config import *
 
 class DomeConnection:

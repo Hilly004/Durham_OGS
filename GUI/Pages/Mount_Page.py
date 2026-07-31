@@ -9,6 +9,10 @@ from PySide6.QtWidgets import (
 
 from PySide6.QtCore import Qt, QTimer
 import time
+import pyqtgraph as pg
+
+from GUI.Widgets.Azimuth_Widget import AzimuthWidget
+from GUI.Widgets.Altitude_Widget import AltitudeWidget
 
 
 class MountPage(QWidget):
@@ -18,6 +22,9 @@ class MountPage(QWidget):
 
         self.controller = controller
         self.main_window = main_window
+
+
+
 
         ##### STATUS #####
 
@@ -43,28 +50,32 @@ class MountPage(QWidget):
         self.export_button.clicked.connect(
             lambda: self.controller.logger.export_to_csv('mount_log.csv'))
 
-        status_layout.addWidget(self.connection_button,5,0,1,2)
-        status_layout.addWidget(self.position_button,6,0,1,2)
-        status_layout.addWidget(self.export_button,7,0,1,2)
+        status_layout.addWidget(self.connection_button,1,0,1,2)
+        status_layout.addWidget(self.position_button,0,6,2,1)
+        status_layout.addWidget(self.export_button,0,7,2,1)
 
-        status_layout.addWidget(QLabel('Connection status:'),2,0)
-        status_layout.addWidget(self.connection_status,2,1)
+        status_layout.addWidget(QLabel('Connection status:'),0,0)
+        status_layout.addWidget(self.connection_status,0,1)
 
-        status_layout.addWidget(QLabel('Right Ascension:'),0,0)
-        status_layout.addWidget(self.right_ascension,0,1)
+        status_layout.addWidget(QLabel('Right Ascension:'),0,2)
+        status_layout.addWidget(self.right_ascension,0,3)
 
-        status_layout.addWidget(QLabel('Declination:'),1,0)
-        status_layout.addWidget(self.declination,1,1)
+        status_layout.addWidget(QLabel('Declination:'),1,2)
+        status_layout.addWidget(self.declination,1,3)
 
-        status_layout.addWidget(QLabel('Altitude:'),3,0)
-        status_layout.addWidget(self.altitude,3,1)
+        status_layout.addWidget(QLabel('Altitude:'),0,4)
+        status_layout.addWidget(self.altitude,0,5)
 
-        status_layout.addWidget(QLabel('Azimuth:'),4,0)
-        status_layout.addWidget(self.azimuth,4,1)
+        status_layout.addWidget(QLabel('Azimuth:'),1,4)
+        status_layout.addWidget(self.azimuth,1,5)
 
-        status_layout.addWidget(self.park_status,8,0,1,2)
+        status_layout.addWidget(self.park_status,0,8,2,1)
 
         status_box.setLayout(status_layout)
+
+
+
+
 
         ##### CONTROL #####
 
@@ -126,26 +137,40 @@ class MountPage(QWidget):
         control_layout.addWidget(self.slew_to_park_button,4,0,1,2)
         control_box.setLayout(control_layout)
 
+
+
+
+
         ##### CAMERA/MAP #####
 
         cam_box = QGroupBox('Camera')
         cam_layout = QGridLayout()
 
-        self.point_button = QPushButton('Go to pointing page')
-        self.point_button.clicked.connect(self.main_window.show_point)
+        self.az_widget = AzimuthWidget()
+        self.alt_widget = AltitudeWidget()
 
-        cam_layout.addWidget(self.point_button)
+        cam_layout.addWidget(self.az_widget)
+        cam_layout.addWidget(self.alt_widget)
 
         cam_box.setLayout(cam_layout)
 
+
+
+
+
         layout = QGridLayout()
 
-        layout.addWidget(status_box,0,0,1,1)
-        layout.addWidget(control_box,1,0,1,1)
-        layout.addWidget(cam_box,0,1,2,2)
+        layout.addWidget(status_box,3,0,1,4)
+        layout.addWidget(control_box,0,0,3,1)
+        layout.addWidget(cam_box,0,1,3,3)
 
 
         self.setLayout(layout)
+
+
+
+
+
 
         self.controller.connection_changed.connect(self.update_connection_status)
         self.controller.position_changed.connect(self.update_position)
@@ -153,11 +178,22 @@ class MountPage(QWidget):
         self.controller.status_changed.connect(self.update_status)
         self.controller.park_changed.connect(self.update_parking)
 
+        self.position_timer = QTimer(self)
+        self.position_timer.setInterval(1000)
+        self.position_timer.timeout.connect(self.update_mount_position)
+
+
+
+
+
+
     def update_connection_status(self, connected):
         if connected:
             self.connection_button.setText('Disconnect')
+            self.position_timer.start()
         else:
             self.connection_button.setText('Connect')
+            self.position_timer.stop()
 
     def toggle_connection(self):
         if self.controller.is_connected(): 
@@ -178,6 +214,14 @@ class MountPage(QWidget):
         self.altitude.setText(position_aa['alt'])
         self.azimuth.setText(position_aa['az'])
 
+        self.az_widget.set_azimuth(position_aa['az'])
+        self.alt_widget.set_altitude(position_aa['alt'])
+
+    def update_mount_position(self):
+        if self.controller.is_connected():
+            self.controller.update_position()
+            self.controller.update_position_aa()
+            
     def set_target(self):
         ra = self.ra_input.text()
         dec = self.dec_input.text()
