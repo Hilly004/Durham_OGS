@@ -15,6 +15,7 @@ class ObservatoryLogEntry:
 class ObservatoryLogger:
 
     def __init__(self):
+        super().__init__()
         self.entries = []
 
     def log(self,info):

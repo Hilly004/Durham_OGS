@@ -4,7 +4,8 @@ from PySide6.QtWidgets import (
     QLabel,
     QGridLayout,
     QGroupBox,
-    QLineEdit
+    QLineEdit,
+    QVBoxLayout
 )
 
 from PySide6.QtCore import Qt, QTimer
@@ -164,7 +165,6 @@ class MountPage(QWidget):
         layout.addWidget(control_box,0,0,3,1)
         layout.addWidget(cam_box,0,1,3,3)
 
-
         self.setLayout(layout)
 
 
@@ -180,8 +180,9 @@ class MountPage(QWidget):
 
         self.position_timer = QTimer(self)
         self.position_timer.setInterval(1000)
-        self.position_timer.timeout.connect(self.update_mount_position)
+        self.position_timer.timeout.connect(self.update_mount_position) 
 
+        
 
 
 

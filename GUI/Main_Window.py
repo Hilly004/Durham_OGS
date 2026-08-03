@@ -1,6 +1,9 @@
 from PySide6.QtWidgets import (
     QMainWindow,
-    QStackedWidget
+    QStackedWidget,
+    QPlainTextEdit,
+    QWidget,
+    QVBoxLayout
 )
 
 from PySide6.QtGui import QAction
@@ -10,6 +13,9 @@ from GUI.Widgets.Mount.Pointing import PointingWidget
 from GUI.Pages.Home_Page import HomePage
 from GUI.Pages.Authentication import Authenticator
 from GUI.Pages.Password_Page import PasswordWindow
+from GUI.Widgets.Terminal_Widget import TerminalWidget
+
+from Utilities.Terminal_Logger import TerminalLogger
 
 class MainWindow(QMainWindow):
 
@@ -19,6 +25,10 @@ class MainWindow(QMainWindow):
         self.observatory = observatory
 
         self.auth = Authenticator()
+        self.terminal = TerminalWidget()
+        self.logger = TerminalLogger()
+
+        self.logger.message.connect(self.terminal.write)
         
         self.home_page = HomePage(observatory.mount_controller,self)
         self.mount_page = MountPage(observatory.mount_controller,self)
@@ -35,11 +45,20 @@ class MainWindow(QMainWindow):
 
         self.stack.setCurrentWidget(self.login_page)
 
-        self.setCentralWidget(self.stack)
-
         self.login_page.authenticated.connect(self.login_success)
 
+        self.logger.log('Mount connected')
+
         self.create_menu()
+
+        central = QWidget()
+
+        main_layout = QVBoxLayout(central)
+
+        main_layout.addWidget(self.stack)
+        main_layout.addWidget(self.terminal)
+
+        self.setCentralWidget(central)
 
         
     def show_home(self):
@@ -76,3 +95,6 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         self.observatory.shutdown()
         event.accept()
+
+    def append_terminal(self,text):
+        self.terminal.appendPlainText(text)

@@ -90,6 +90,24 @@ class MountController(QObject):
 
     def get_dec(self):
         return self.mount.get_telescope_dec()
+    
+    def get_ra_dec(self):
+        return {
+            'ra': self.get_ra(),
+            'dec': self.get_dec()
+        }
+    
+    def get_alt(self):
+        return self.mount.get_telescope_altitude()
+    
+    def get_az(self):
+        return self.mount.get_telescope_azimuth()
+
+    def get_alt_az(self):
+        return {
+            'alt': self.get_alt(),
+            'az': self.get_az()
+        }
 
     def get_mount_status(self):
         return self.mount.get_mount_status()
@@ -136,6 +154,13 @@ class MountController(QObject):
 
         self.logger.log(self.get_info()
         )
+
+    def get_status(self):
+        stat = {
+            self.is_connected,
+            self.get_info
+
+        }
     #### Home & Park ####
 
     def slew_to_park(self):
@@ -183,8 +208,20 @@ class MountController(QObject):
     def get_target_dec(self):
         return self.mount.get_target_dec()
     
+    def get_target_ra_dec(self):
+        return {
+            'ra': self.get_target_ra(),
+            'dec': self.get_target_dec()
+        }
+
     def get_target_azimuth(self):
         return self.mount.get_target_azimuth()
     
     def get_target_altitude(self):
         return self.mount.get_target_altitude()
+    
+    def get_target_alt_az(self):
+        return {
+            'alt': self.get_target_altitude(),
+            'az': self.get_target_azimuth()
+        }
