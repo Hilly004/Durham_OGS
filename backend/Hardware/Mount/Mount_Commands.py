@@ -347,8 +347,8 @@ class TenMicronMount:
         return self.query(message)
 
 
-    def query_park_status(self):
-        # Query whether the mount is parked
+    def query_home_status(self):
+        # Query home status of the mount
         message = ':h?#'
         return self.query(message)
 

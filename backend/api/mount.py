@@ -3,7 +3,7 @@ from Controllers.Mount_Controller import MountController
 
 
 router = APIRouter(
-    prefix='',
+    prefix='/api/mount',
     tags=['']
 )
 
@@ -34,9 +34,9 @@ def disconnect():
 
 @router.get('/status')
 def status():
-    result = controller.get_status()
-    return {'success': True,
-            'data': result}
+
+    print('Controller:', controller)
+    return controller.get_status()
 
 @router.get('/position_aa')
 def position_aa():
@@ -70,7 +70,7 @@ def get_target_rd():
 # SET COMMANDS
 # -------------------------------------------------------------------------------
 
-@router.post
+#@router.post
 # -------------------------------------------------------------------------------
 # PARK COMMANDS
 # -------------------------------------------------------------------------------

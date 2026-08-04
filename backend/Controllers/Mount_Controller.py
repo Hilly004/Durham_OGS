@@ -80,8 +80,13 @@ class MountController(QObject):
     def stop_motion(self):
         self.mount.stop_all_motion()
 
+    def start_tracking(self):
+        self.mount.start_tracking()
+        self.status_changed.emit('Tracking started')
+
     def stop_tracking(self):
         self.mount.stop_tracking()
+        self.status_changed.emit('Tracking stopped')
 
     #### Get ####
 
@@ -156,11 +161,17 @@ class MountController(QObject):
         )
 
     def get_status(self):
-        stat = {
-            self.is_connected,
-            self.get_info
 
+        if not self.mount.is_connected():
+            return {
+                'connected': False,
+                'data': None
+            }
+        return {
+            'connected': True,
+            'data': self.get_status()
         }
+    
     #### Home & Park ####
 
     def slew_to_park(self):
@@ -176,6 +187,8 @@ class MountController(QObject):
         self.mount.unpark()
         self.park_changed.emit(False)
 
+    def get_home_status(self):
+        return self.mount.query_home_status()
     
 
     #### Set ####

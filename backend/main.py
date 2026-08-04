@@ -1,10 +1,21 @@
 from fastapi import FastAPI
 
-from backend.api.mount import router as mount_router
+from api import mount
 
-app = FastAPI(title='Durham OGS API')
+from Controllers.Mount_Controller import MountController
+from Hardware.Mount.Mount_Commands import TenMicronMount
+from Hardware.Connections.Mount_Connection import MountConnection
+from Utilities.Config import host, port
 
-app.include_router(mount_router, prefix='/mount')
+app = FastAPI(title="Durham OGS API")
+
+connection = MountConnection(host, port)
+mount_driver = TenMicronMount(connection)
+controller = MountController(mount_driver)
+
+mount.set_controller(controller)
+
+app.include_router(mount.router)
 
 @app.get('/')
 def root():
