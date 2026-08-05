@@ -25,7 +25,14 @@ export default function MountControls() {
     }
 
     return (
-        <div className='panel'>
+        <div className='
+        bg-slate-800
+        rounded-xl
+        p-6
+        shadow-lg
+        border
+        border-slate-700
+        '>
             <h2>Mount Controls</h2>
 
             <button onClick={handlePark}>Park Mount</button>

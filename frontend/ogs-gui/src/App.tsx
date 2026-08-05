@@ -9,6 +9,7 @@ import Layout from "./components/Layout/Layout";
 import Home from "./pages/Home";
 import Mount from "./pages/MountPage";
 import Dome from "./pages/DomePage";
+import Settings from "./pages/SettingsPage";
 
 export default function App() {
   return (
@@ -34,6 +35,11 @@ export default function App() {
           <Route 
             path='/dome'
             element={<Dome />}
+          />
+
+          <Route
+            path='/settings'
+            element={<Settings />}
           />
 
         </Route>

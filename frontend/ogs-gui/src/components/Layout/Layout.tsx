@@ -3,11 +3,11 @@ import { Outlet } from "react-router-dom";
 
 export default function Layout() {
     return (
-        <div style={{ display: "flex" }}>
+        <div className='flex h-screen'>
 
             <Sidebar />
 
-            <main style={{ padding: '20px'}}>
+            <main className='flex-1 p-6'>
                 <Outlet />
             </main>
 

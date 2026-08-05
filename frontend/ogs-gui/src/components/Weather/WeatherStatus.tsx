@@ -1,20 +1,20 @@
 import { useEffect, useState } from "react";
-import { getMountStatus } from "../../api/mount";
-import type { MountStatusData } from "../../api/mount";
+import { getWeatherStatus } from "../../api/weather";
+import type { WeatherStatusData } from "../../api/weather";
 import {
-    connectMount,
-    disconnectMount
-} from "../../api/mount";
+    connectWeather,
+    disconnectWeather
+} from "../../api/weather";
 
-export default function MountStatusWidget(){
+export default function WeatherStatusWidget(){
 
-    const [status, setStatus] = useState<MountStatusData | null>(null);
+    const [status, setStatus] = useState<WeatherStatusData | null>(null);
 
 
     useEffect(() => {
 
         const update = () => {
-            getMountStatus()
+            getWeatherStatus()
                 .then(setStatus)
                 .catch(console.error);
         };
@@ -41,7 +41,7 @@ export default function MountStatusWidget(){
             "
             >
                 <h2 className="text-xl font-bold mb-4 text-white"
-                >Mount Status</h2>
+                >Weather Station Status</h2>
 
                 <p className="text-red-400"
                 >
@@ -61,8 +61,8 @@ export default function MountStatusWidget(){
 
     async function handleConnect() {
         try {
-            await connectMount();
-            console.log('Mount connected');
+            await connectWeather();
+            console.log('Weather station connected');
         } 
         catch (error) {
             console.error(error);
@@ -71,8 +71,8 @@ export default function MountStatusWidget(){
 
     async function handleDisconnect() {
         try {
-            await disconnectMount();
-            console.log('Mount disconnected');
+            await disconnectWeather();
+            console.log('Weather station disconnected');
         } 
         catch (error) {
             console.error(error);
@@ -93,19 +93,14 @@ export default function MountStatusWidget(){
             <p>
                 Connected: {status.connected ? "Yes" : "No"}
             </p>
-            
-            <p>
-                Altitude: {status.alt}
-            </p>
-
-            <p>
-                Azimuth: {status.az}
-            </p>
-
             <button onClick={status.connected ? handleDisconnect : handleConnect}>
                 {status.connected ? "Disconnect" : "Connect"}
             </button>   
         </div>
     );
 }
+
+
+
+   
 
