@@ -1,17 +1,46 @@
-import MountPage from "./pages/MountPage";
-import MountControls from "./components/Mount/MountControls";
+import {
+  BrowserRouter,
+  Routes,
+  Route
+} from "react-router-dom"
 
+import Layout from "./components/Layout/Layout";
 
-function App() {
+import Home from "./pages/Home";
+import Mount from "./pages/MountPage";
+import Dome from "./pages/DomePage";
 
-  return(
-    <div>
-      <h1>Durham OGS</h1>
-      <MountPage />
-      <MountControls />
-    </div>
-    
+export default function App() {
+  return (
+
+    <BrowserRouter>
+
+      <Routes>
+
+        <Route 
+          path='/'
+          element={<Layout />}
+        >
+          <Route 
+            path='/'
+            element={<Home />}
+          />
+
+          <Route 
+            path='/mount'
+            element={<Mount />}
+          />
+
+          <Route 
+            path='/dome'
+            element={<Dome />}
+          />
+
+        </Route>
+
+      </Routes>
+
+    </BrowserRouter>
+
   );
 }
-
-export default App;

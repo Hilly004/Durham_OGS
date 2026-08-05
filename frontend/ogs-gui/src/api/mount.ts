@@ -54,3 +54,25 @@ export async function slewMount(
         throw new Error("Failed to slew mount");
     }
 }
+
+export async function connectMount(): Promise<void> {
+
+    const response = await fetch("/api/mount/connect", {
+        method: "POST"
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to connect mount");
+    }
+}   
+
+export async function disconnectMount(): Promise<void> {
+
+    const response = await fetch("/api/mount/disconnect", {
+        method: "POST"
+    });
+
+    if (!response.ok) {
+        throw new Error("Failed to disconnect mount");
+    }
+}   

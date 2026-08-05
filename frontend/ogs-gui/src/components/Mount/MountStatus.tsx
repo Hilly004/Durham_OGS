@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
-import { getMountStatus, MountStatusData } from "../../api/mount";
-
+import { getMountStatus } from "../../api/mount";
+import type { MountStatusData } from "../../api/mount";
+import {
+    connectMount,
+    disconnectMount
+} from "../../api/mount";
 
 export default function MountStatusWidget(){
 
@@ -26,9 +30,38 @@ export default function MountStatusWidget(){
 
 
     if (!status) {
-        return <p>Loading...</p>;
+        return(
+            <div>
+                <button onClick={handleConnect}>
+                    Connect
+                </button>
+
+                <p>Mount not connected</p>
+            </div>    
+        );
     }
 
+   
+
+    async function handleConnect() {
+        try {
+            await connectMount();
+            console.log('Mount connected');
+        } 
+        catch (error) {
+            console.error(error);
+        }
+    }
+
+    async function handleDisconnect() {
+        try {
+            await disconnectMount();
+            console.log('Mount disconnected');
+        } 
+        catch (error) {
+            console.error(error);
+        }
+    }
 
     return (
         <div>
@@ -37,7 +70,7 @@ export default function MountStatusWidget(){
             <p>
                 Connected: {status.connected ? "Yes" : "No"}
             </p>
-
+            
             <p>
                 Altitude: {status.alt}
             </p>
@@ -45,6 +78,11 @@ export default function MountStatusWidget(){
             <p>
                 Azimuth: {status.az}
             </p>
+
+            <button onClick={status.connected ? handleDisconnect : handleConnect}>
+                {status.connected ? "Disconnect" : "Connect"}
+            </button>   
         </div>
     );
 }
+
