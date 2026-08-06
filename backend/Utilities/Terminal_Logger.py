@@ -5,7 +5,7 @@ import csv
 class TerminalLogger(QObject):
     message = Signal(str)
 
-    def __init__(self):
+    def __init__(self,logger):
         super().__init__()
         self.messages = []
 

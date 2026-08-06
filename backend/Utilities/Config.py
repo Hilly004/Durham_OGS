@@ -1,5 +1,5 @@
 host = '192.168.1.119'
 port = 3490
 
-dome_host = ''
-dome_port = ' '
+dome_host = '' 
+dome_port = 502

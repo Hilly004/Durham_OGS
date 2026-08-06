@@ -23,6 +23,17 @@ class AstroHavenDome:
     def disconnect(self):
         return self.connection.disconnect()
 
+    def format(
+            self, 
+            id,
+            action,
+            coil,
+            msg
+            )
+        return self.connection.send(
+            '00'+id+'0000'+'0006'+'01'+action+'00'+coil+msg
+            )
+
     #####
 
     def open_dome(self):

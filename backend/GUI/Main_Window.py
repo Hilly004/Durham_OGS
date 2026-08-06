@@ -15,7 +15,7 @@ from GUI.Pages.Authentication import Authenticator
 from GUI.Pages.Password_Page import PasswordWindow
 from GUI.Widgets.Terminal_Widget import TerminalWidget
 
-from Utilities.Terminal_Logger import TerminalLogger
+#from Utilities.Terminal_Logger import TerminalLogger
 
 class MainWindow(QMainWindow):
 
@@ -25,10 +25,10 @@ class MainWindow(QMainWindow):
         self.observatory = observatory
 
         self.auth = Authenticator()
-        self.terminal = TerminalWidget()
-        self.logger = TerminalLogger()
+        #self.terminal = TerminalWidget()
+        #self.logger = TerminalLogger()
 
-        self.logger.message.connect(self.terminal.write)
+        #self.logger.message.connect(self.terminal.write)
         
         self.home_page = HomePage(observatory.mount_controller,self)
         self.mount_page = MountPage(observatory.mount_controller,self)
@@ -47,7 +47,7 @@ class MainWindow(QMainWindow):
 
         self.login_page.authenticated.connect(self.login_success)
 
-        self.logger.log('Mount connected')
+        #self.logger.log('Mount connected')
 
         self.create_menu()
 
@@ -56,7 +56,7 @@ class MainWindow(QMainWindow):
         main_layout = QVBoxLayout(central)
 
         main_layout.addWidget(self.stack)
-        main_layout.addWidget(self.terminal)
+        #main_layout.addWidget(self.terminal)
 
         self.setCentralWidget(central)
 
