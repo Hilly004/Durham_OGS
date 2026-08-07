@@ -6,11 +6,14 @@ class DomeController(QObject):
 
     connection_changed = Signal(bool)
     status_changed = Signal(str)
+    left_changed = Signal(str)
+    right_changed = Signal(str)
 
-    def __init__(self,dome):
+    def __init__(self,dome,safety):
         super().__init__()
 
         self.dome = dome
+        self.safety = safety
         self.logger = ObservatoryLogger()
 
     def connect(self):
@@ -32,3 +35,43 @@ class DomeController(QObject):
 
     def is_connected(self):
         return self.dome.is_connected()
+    
+
+
+
+
+    def open_dome(self, force=False):
+        if not force and not self.safety.open_safe():
+            self.status_changed.emit('Unsafe conditions - dome will not open')
+            return False
+        
+        self.dome.open_dome()
+        return True
+    
+    def close_dome(self):
+        self.dome.close_dome()
+    
+
+    def open_left(self, force=False):
+        if not force and not self.safety.open_safe():
+            self.status_changed.emit('Unsafe conditions - dome will not open')
+            return False
+        
+        self.dome.open_left()
+        return True
+    
+    def open_right(self, force=False):
+        if not force and not self.safety.open_safe():
+            self.status_changed.emit('Unsafe conditions - dome will not open')
+            return False
+
+        self.dome.open_right()
+        return True
+    
+    def close_left(self):
+        self.dome.close_dome()
+
+    def close_right(self):
+        self.dome.close_right()
+
+    

@@ -3,56 +3,114 @@ from Utilities.Config import *
 
 class DomeConnection:
 
-    def __init__(self, dome_host:str, dome_port:int):
-        self.dome_host = dome_host
-        self.dome_port = dome_port
+    def __init__(self,dome_host:str, dome_port: int):
+        self.dome_host=dome_host
+        self.dome_port=dome_port
 
-        self.client = ModbusTcpClient(self.dome_host,self.dome_port)
+        self.client = ModbusTcpClient(
+            host=self.dome_host,
+            port=self.dome_port
+        )
 
-        self.connected = False
+        self.connected=False
+
+    #########################################################################
+    #                       Connection
+    #########################################################################
 
     def connect(self):
+
         if self.connected:
-            return
+            return True
         
         try:
-            self.client.connect()
-            
+            self.connected = self.client.connect()
+
             if self.connected:
-                print('Connnected')
+                print(f'Connected to {self.dome_host}:{self.dome_port}')
             else:
                 print('Unable to connect')
 
             return self.connected
-
+        
         except Exception as e:
             print(f'Connection error: {e}')
             self.connected = False
-            return False
-    
+            return True
+        
     def disconnect(self):
+
         if self.connected:
             self.client.close()
             self.connected = False
             print('Disconnected')
 
-    def send(self,msg):
-        if self.connected:
-            self.client.send(msg)
-        else:
-            print('Domne not connected')
-
-    def receive(self,msg):
-        if self.connected:
-            self.client.recv(msg)
-        else:
-            print('Dome not connected')
-
-    def send_recv(self,msg):
-        if self.connected:
-            self.connect(msg)
-            self.receive(msg)
-        else:
-            print('Dome not connected')
-
+    def is_connnected(self):
+        return self.connected
     
+    #########################################################################
+    #                       Coils
+    #########################################################################
+
+    def write_coil(
+            self,
+            address: int,
+            value: bool,
+            device_id: int=1
+    ):
+        if not self.connected:
+            raise ConnectionError('Dome not connected')
+        
+        result = self.client.write_coil(
+            address=address,
+            value=value,
+            device_id=device_id
+        )
+
+        if result.isError():
+            raise RuntimeError(f'Failed to write to coil {address}')
+        
+        return result
+    
+    def read_coil(
+            self,
+            address: int,
+            device_id: int=1
+    ):
+        if not self.connected:
+            raise ConnectionError('Dome not connected')
+        
+        result = self.client.read_coils(
+            address=address,
+            count=1,
+            device_id=device_id
+        )
+
+        if result.isError():
+            raise RuntimeError(f'Failed to reads coil {address}')
+        
+        return result.bits[0]
+    
+    
+    #########################################################################
+    #                       Registers
+    #########################################################################
+
+    def read_register(
+            self,
+            address: int,
+            device_id: int=1
+    ):
+        if not self.connected:
+            raise ConnectionError('Dome not connected')
+        
+        result = self.client.read_holding_registers(
+            address=address,
+            count=1,
+            device_id=device_id
+        )
+
+        if result.isError():
+            raise RuntimeError(f'Failed to reads coil {address}')
+        
+        return result.registers[0]
