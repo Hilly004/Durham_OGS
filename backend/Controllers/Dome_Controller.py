@@ -40,33 +40,22 @@ class DomeController(QObject):
 
 
 
-    def open_dome(self, force=False):
-        if not force and not self.safety.open_safe():
-            self.status_changed.emit('Unsafe conditions - dome will not open')
-            return False
-        
+    def open_dome(self):
+        self.status_changed.emit('Dome opening...')
         self.dome.open_dome()
-        return True
+
     
     def close_dome(self):
         self.dome.close_dome()
     
 
-    def open_left(self, force=False):
-        if not force and not self.safety.open_safe():
-            self.status_changed.emit('Unsafe conditions - dome will not open')
-            return False
-        
+    def open_left(self):
+        self.status_changed.emit('Left side opening...')
         self.dome.open_left()
-        return True
     
-    def open_right(self, force=False):
-        if not force and not self.safety.open_safe():
-            self.status_changed.emit('Unsafe conditions - dome will not open')
-            return False
-
+    def open_right(self):
+        self.status_changed.emit('Right side opening...')
         self.dome.open_right()
-        return True
     
     def close_left(self):
         self.dome.close_dome()
