@@ -21,6 +21,49 @@ export async function getMountStatus(): Promise<MountStatusData> {
     return result.data;
 }
 
+export interface MountPosition {
+    alt: number;
+    az: number;
+}
+
+export interface MountPosition_rd {
+    ra: number;
+    dec: number;
+}
+
+interface PositionApiResponse {
+    success: boolean;
+    data: MountPosition;
+}
+
+
+export async function getMountPosition(): Promise<MountPosition> {
+
+    const response = await fetch("/api/mount/position_aa");
+
+    if (!response.ok) {
+        throw new Error("Failed to get mount position");
+    }
+
+    const result: PositionApiResponse =
+        await response.json();
+
+    return result.data;
+}
+
+export async function getMountPosition_rd(): Promise<MountPosition> {
+
+    const response = await fetch("/api/mount/position_rd");
+
+    if (!response.ok) {
+        throw new Error("Failed to get mount position");
+    }
+
+    const result: PositionApiResponse =
+        await response.json();
+
+    return result.data;
+}
 
 export async function parkMount(): Promise<void> {
 
