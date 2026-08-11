@@ -2,18 +2,17 @@ from PySide6.QtCore import QObject, Signal, QTimer
 
 from Utilities.Observatory_Logger import ObservatoryLogger
 
-class DomeController(QObject):
+class DomeController:
 
     connection_changed = Signal(bool)
     status_changed = Signal(str)
     left_changed = Signal(str)
     right_changed = Signal(str)
 
-    def __init__(self,dome,safety):
+    def __init__(self,dome):
         super().__init__()
 
         self.dome = dome
-        self.safety = safety
         self.logger = ObservatoryLogger()
 
     def connect(self):
@@ -33,12 +32,25 @@ class DomeController(QObject):
         self.connection_changed.emit(False)
         self.status_changed.emit('Dome not connected')
 
+    @property
     def is_connected(self):
         return self.dome.is_connected()
     
+    @property
+    def is_open(self):
+        return self.dome.all_open
 
+    @property
+    def is_moving(self):
+        return self.dome.either_motor_running
 
-
+    def get_status(self):
+        return {
+            'connected': self.is_connected,
+            'open': self.is_open,
+            'moving': self.is_moving,
+            'fault': self.has_fault
+        }
 
     def open_dome(self):
         self.status_changed.emit('Dome opening...')
@@ -46,6 +58,7 @@ class DomeController(QObject):
 
     
     def close_dome(self):
+        self.status_changed.emit('Dome closing...')
         self.dome.close_dome()
     
 
@@ -58,9 +71,13 @@ class DomeController(QObject):
         self.dome.open_right()
     
     def close_left(self):
-        self.dome.close_dome()
+        self.status_changed.emit('Left side closing')
+        self.dome.close_left()
 
     def close_right(self):
+        self.status_changed.emit('Right side closing')
         self.dome.close_right()
 
-    
+    @property
+    def has_fault(self):
+        return self.dome.fault()

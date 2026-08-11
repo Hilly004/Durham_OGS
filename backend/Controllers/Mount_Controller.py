@@ -27,7 +27,7 @@ class MountController(QObject):
             self.mount.connect()
             self.connection_changed.emit(True)
             self.status_changed.emit('Connected')
-            self.log_timer.start(1000)
+            self.log_timer.start(10000)
 
         except Exception as e:
             self.connection_changed.emit(False)
@@ -169,7 +169,7 @@ class MountController(QObject):
             }
         return {
             'connected': True,
-            'data': self.get_status()
+            'data': None
         }
     
     #### Home & Park ####

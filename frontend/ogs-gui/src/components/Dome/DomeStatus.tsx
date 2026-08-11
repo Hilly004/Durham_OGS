@@ -8,80 +8,130 @@ import {
 
 import type { DomeStatusData } from "../../api/dome";
 
-export default function DomeStatus() {
+import StatusCard from "../Common/StatusCard";
 
-    const [status, setStatus] = useState<DomeStatusData | null>(null);
+
+export default function DomeStatusWidget() {
+
+    const [status, setStatus] =
+        useState<DomeStatusData | null>(null);
+
 
     useEffect(() => {
 
         const update = () => {
+
             getDomeStatus()
                 .then(setStatus)
                 .catch(console.error);
+
         };
 
         update();
 
-        const timer = setInterval(update, 1000);
+        const timer = setInterval(update, 5000);
 
         return () => clearInterval(timer);
 
     }, []);
 
+
     async function handleConnect() {
-        await connectDome();
+
+        try {
+            await connectDome();
+        } catch (error) {
+            console.error(error);
+        }
+
     }
+
 
     async function handleDisconnect() {
-        await disconnectDome();
+
+        try {
+            await disconnectDome();
+        } catch (error) {
+            console.error(error);
+        }
+
     }
 
+
     if (!status) {
+
         return (
-            <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
-                <h2 className="text-xl font-bold mb-4">
-                    Dome Status
-                </h2>
+            <StatusCard
+                title="Dome"
+                status="error"
+            >
 
                 <p className="text-red-400">
-                    Not connected
+                    Unable to read dome status
                 </p>
 
                 <button
                     onClick={handleConnect}
-                    className="mt-4 px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
+                    className="
+                        mt-4
+                        w-full
+                        px-4
+                        py-2
+                        rounded-lg
+                        bg-blue-600
+                        hover:bg-blue-700
+                        transition
+                    "
                 >
                     Connect
                 </button>
-            </div>
+
+            </StatusCard>
         );
     }
 
+
     return (
-        <div className="bg-slate-800 rounded-xl p-6 border border-slate-700">
+    <StatusCard
+        title="Dome"
+        status={
+            status.connected
+                ? "connected"
+                : "disconnected"
+        }
+    >
 
-            <h2 className="text-xl font-bold mb-4">
-                Dome Status
-            </h2>
-
-            <p>
-                Connected: {status.connected ? "Yes" : "No"}
-            </p>
-
-            <p>
-                Open: {status.isOpen ? "Yes" : "No"}
-            </p>
-
-            <button
-                onClick={
-                    status.connected
-                        ? handleDisconnect
-                        : handleConnect
-                }
-            >
-                {status.connected ? "Disconnect" : "Connect"}
-            </button>
-
+        <div className="text-2xl font-semibold">
+            Open
         </div>
-    );
+
+
+        {/* Connection button */}
+
+        <button
+            onClick={
+                status.connected
+                    ? handleDisconnect
+                    : handleConnect
+            }
+
+            className="
+                w-full
+                mt-6
+                px-4
+                py-2
+                rounded-lg
+                bg-slate-700
+                hover:bg-slate-600
+                text-white
+                transition
+            "
+        >
+            {status.connected
+                ? "Disconnect"
+                : "Connect"}
+        </button>
+
+    </StatusCard>
+);
 }

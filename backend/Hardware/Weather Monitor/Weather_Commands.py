@@ -1,3 +1,5 @@
+import time
+
 class WeatherMonitor:
 
     def __init__(self):
@@ -6,7 +8,11 @@ class WeatherMonitor:
 
     def update(self):
         #read sensors
-        #update self.safe
-        pass
+        self.safe =
+        self.last_update = time.monotonic()
 
-    
+    def is_raining(self):
+
+    def wind_speed(self):
+
+    def humidity(self):

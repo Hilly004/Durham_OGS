@@ -1,23 +1,62 @@
-import asyncio
+from Controllers.safety_manager import SafetyManager
+import time
+import threading
 
-class ObservatoryOperations:
+class ObservatoryController:
 
-    def __init__(self, dome, mount, safety):
+    def __init__(self, dome, mount, weather):
         self.dome = dome
         self.mount = mount
-        self.safety = safety
+        self.safety = SafetyManager(
+            mount,
+            dome,
+            weather
+        )
 
+        self.running = False
+        self.monitor_thread = None
+
+    def start(self):
+        self.running = True
+
+        self.monitor_thread = threading.Thread(
+            target = self._monitor,
+            daemon=True
+        )
+
+        self.monitor_thread.start()
+
+
+    def _monitor(self):
+
+        prev_safe = True
+
+        while self.running:
+            try:
+                self.weather.update()
+                currently_safe = self.safety.is_safe()
+
+                if prev_safe and not currently_safe:
+                    print('Unsafe conditions detected')
+                    self.safe_shutdown()
+
+                prev_safe = currently_safe
+
+            except Exception as e:
+                print(f'Monitoring error: {e}')
+
+            time.sleep(1000)    #change number eventually
+
+    def stop(self):
         self.running = False
 
     def open_dome(self):
-        if not self.safety.open_safe():
-            print('Weather conditions unsafe')
+        if not self.safety.is_safe:
+            self.logger.warning('Dome opening prevented')
             return False
-        if not self.weather.is_connected():
-            print('Weather monitor not connnected')
-            return False
-        
-        self.dome.open_dome()
+
+        return self.dome.open_dome()
+
 
 
     def close_dome(self):
@@ -25,27 +64,9 @@ class ObservatoryOperations:
         self.dome.close_dome()
 
     def safe_shutdown(self):
-        self.state.mode = ObservatoryMode.SAFE_SHUTDOWN
+        self.dome.close_dome()
+        self.mount.park()
 
-        try:
-            self.mount.stop_motion()
-        except Exception:
-            pass
-
-        try:
-            self.dome.close_dome()
-        except Exception:
-            pass
-
-
-    async def monitor_safety(self):
-        while self.running:
-            self.weather.update()
-
-            if not self.safety.is_safe():
-                await self.safe_shutdown()
-
-            await asyncio.sleep(1)
 
 
     

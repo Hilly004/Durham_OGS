@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends
 from Controllers.Mount_Controller import MountController
 
-
 router = APIRouter(
     prefix='/api/mount',
     tags=['']
@@ -35,8 +34,12 @@ def disconnect():
 @router.get('/status')
 def status():
 
-    print('Controller:', controller)
-    return controller.get_status()
+    result = controller.get_status()
+
+    return {
+        "success": True,
+        "data": result
+    }
 
 @router.get('/position_aa')
 def position_aa():

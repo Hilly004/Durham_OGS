@@ -1,111 +1,161 @@
 import { useEffect, useState } from "react";
-import { getMountStatus } from "../../api/mount";
-import type { MountStatusData } from "../../api/mount";
+
 import {
+    getMountStatus,
     connectMount,
-    disconnectMount
+    disconnectMount,
 } from "../../api/mount";
 
-export default function MountStatusWidget(){
+import type { MountStatusData } from "../../api/mount";
 
-    const [status, setStatus] = useState<MountStatusData | null>(null);
+import StatusCard from "../Common/StatusCard";
+
+
+export default function MountStatusWidget() {
+
+    const [status, setStatus] =
+        useState<MountStatusData | null>(null);
 
 
     useEffect(() => {
 
         const update = () => {
+
             getMountStatus()
                 .then(setStatus)
                 .catch(console.error);
+
         };
 
         update();
 
-        const timer = setInterval(update,1000000) //this needs changing to a more reasonable value when the ui has been built
+        const timer = setInterval(update, 5000);
 
         return () => clearInterval(timer);
-        
 
     }, []);
 
 
-    if (!status) {
-        return(
-            <div className="
-            bg-slate-800
-            rounded-xl
-            p-6
-            shadow-lg
-            border
-            border-slate-700
-            "
-            >
-                <h2 className="text-xl font-bold mb-4 text-white"
-                >Mount Status</h2>
+    async function handleConnect() {
 
-                <p className="text-red-400"
-                >
-                    Not connected
+        try {
+            await connectMount();
+        } catch (error) {
+            console.error(error);
+        }
+
+    }
+
+
+    async function handleDisconnect() {
+
+        try {
+            await disconnectMount();
+        } catch (error) {
+            console.error(error);
+        }
+
+    }
+
+
+    if (!status) {
+
+        return (
+            <StatusCard
+                title="Mount"
+                status="error"
+            >
+
+                <p className="text-red-400">
+                    Unable to read mount status
                 </p>
 
-                <button onClick={handleConnect}
-                className="mt-4 px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
+                <button
+                    onClick={handleConnect}
+                    className="
+                        mt-4
+                        w-full
+                        px-4
+                        py-2
+                        rounded-lg
+                        bg-blue-600
+                        hover:bg-blue-700
+                        transition
+                    "
                 >
                     Connect
                 </button>
-            </div>    
+
+            </StatusCard>
         );
     }
 
-   
-
-    async function handleConnect() {
-        try {
-            await connectMount();
-            console.log('Mount connected');
-        } 
-        catch (error) {
-            console.error(error);
-        }
-    }
-
-    async function handleDisconnect() {
-        try {
-            await disconnectMount();
-            console.log('Mount disconnected');
-        } 
-        catch (error) {
-            console.error(error);
-        }
-    }
 
     return (
-        <div className='
-        bg-slate-800
-        rounded-xl
-        p-6
-        shadow-lg
-        border
-        border-slate-700'
-        >
-            <h2>Mount Status</h2>
+    <StatusCard
+        title="Mount"
+        status={
+            status.connected
+                ? "connected"
+                : "disconnected"
+        }
+    >
 
-            <p>
-                Connected: {status.connected ? "Yes" : "No"}
-            </p>
-            
-            <p>
-                Altitude: {status.alt}
-            </p>
+        <div className="
+            grid
+            grid-cols-2
+            gap-4
+        ">
 
-            <p>
-                Azimuth: {status.az}
-            </p>
+            <div>
+                <p className="text-slate-400 text-sm">
+                    Altitude
+                </p>
 
-            <button onClick={status.connected ? handleDisconnect : handleConnect}>
-                {status.connected ? "Disconnect" : "Connect"}
-            </button>   
+                <p className="text-2xl font-semibold">
+                    {status.alt}°
+                </p>
+            </div>
+
+            <div>
+                <p className="text-slate-400 text-sm">
+                    Azimuth
+                </p>
+
+                <p className="text-2xl font-semibold">
+                    {status.az}°
+                </p>
+            </div>
+
         </div>
-    );
-}
 
+
+        {/* Connection button */}
+
+        <button
+            onClick={
+                status.connected
+                    ? handleDisconnect
+                    : handleConnect
+            }
+
+            className="
+                w-full
+                mt-6
+                px-4
+                py-2
+                rounded-lg
+                bg-slate-700
+                hover:bg-slate-600
+                text-white
+                transition
+            "
+        >
+            {status.connected
+                ? "Disconnect"
+                : "Connect"}
+        </button>
+
+    </StatusCard>
+);
+}

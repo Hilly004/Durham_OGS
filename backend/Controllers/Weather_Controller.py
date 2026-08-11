@@ -20,3 +20,16 @@ class WeatherController(QObject):
 
         except Exception as e:
             self.connection_changed.emit(False)
+
+    def disconnect(self):
+        self.status_changed.emit('Disconnecting...')
+        self.monitor.disconnect()
+        self.connection_changed.emit(False)
+
+
+    def safe(self):
+        return(
+            not self.weather.is_raining()
+            and self.weather.wind_speed() < 40
+            and self.weather.humidity() <95
+        )
