@@ -69,6 +69,10 @@ export default function MountStatusWidget() {
 
                 console.error(error);
 
+                setStatus(null);
+                setPosition(null);
+                setPosition_rd(null);
+
             }
 
         };
@@ -77,7 +81,7 @@ export default function MountStatusWidget() {
         update();
 
         const timer =
-            setInterval(update, 5000);
+            setInterval(update, 1000);
 
         return () =>
             clearInterval(timer);
@@ -90,17 +94,15 @@ export default function MountStatusWidget() {
     // --------------------------------------------------
 
     async function handleConnect() {
+    try {
+        await connectMount();
 
-        try {
+        const mountStatus = await getMountStatus();
+        setStatus(mountStatus);
 
-            await connectMount();
-
-        } catch (error) {
-
-            console.error(error);
-
-        }
-
+    } catch (error) {
+        console.error(error);
+    }
     }
 
 
@@ -109,17 +111,18 @@ export default function MountStatusWidget() {
     // --------------------------------------------------
 
     async function handleDisconnect() {
+    try {
+        await disconnectMount();
 
-        try {
+        const mountStatus = await getMountStatus();
+        setStatus(mountStatus);
 
-            await disconnectMount();
+        setPosition(null);
+        setPosition_rd(null);
 
-        } catch (error) {
-
-            console.error(error);
-
-        }
-
+    } catch (error) {
+        console.error(error);
+    }
     }
 
 
@@ -301,4 +304,4 @@ export default function MountStatusWidget() {
 
         </StatusCard>
     );
-}ß
+}

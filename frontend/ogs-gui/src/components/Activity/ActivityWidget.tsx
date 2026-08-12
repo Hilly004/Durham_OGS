@@ -8,56 +8,19 @@ export default function ActivityLog() {
             status="safe"
         >
 
-            <div className="space-y-4">
+            <div className="h-full flex flex-col">
 
-                <div className="flex gap-4">
+                <h2 className="text-lg font-bold mb-3">
+                Activity
+                </h2>
 
-                    <span className="text-slate-500 text-sm">
-                        14:42:31
-                    </span>
+                <div className="
+                    flex-1
+                    overflow-y-auto
+                    space-y-2
+                ">
 
-                    <p className="text-slate-300">
-                        Mount connected
-                    </p>
-
-                </div>
-
-
-                <div className="flex gap-4">
-
-                    <span className="text-slate-500 text-sm">
-                        14:41:18
-                    </span>
-
-                    <p className="text-slate-300">
-                        Weather conditions safe
-                    </p>
-
-                </div>
-
-
-                <div className="flex gap-4">
-
-                    <span className="text-slate-500 text-sm">
-                        14:40:52
-                    </span>
-
-                    <p className="text-slate-300">
-                        Dome position updated
-                    </p>
-
-                </div>
-
-
-                <div className="flex gap-4">
-
-                    <span className="text-slate-500 text-sm">
-                        14:39:44
-                    </span>
-
-                    <p className="text-slate-300">
-                        Observatory started
-                    </p>
+                {/* log entries */}
 
                 </div>
 

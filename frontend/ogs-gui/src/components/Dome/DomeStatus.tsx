@@ -29,7 +29,7 @@ export default function DomeStatusWidget() {
 
         update();
 
-        const timer = setInterval(update, 5000);
+        const timer = setInterval(update, 1000);
 
         return () => clearInterval(timer);
 

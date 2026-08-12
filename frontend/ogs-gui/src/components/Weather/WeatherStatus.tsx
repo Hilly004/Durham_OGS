@@ -1,106 +1,184 @@
 import { useEffect, useState } from "react";
-import { getWeatherStatus } from "../../api/weather";
-import type { WeatherStatusData } from "../../api/weather";
+
 import {
     connectWeather,
-    disconnectWeather
+    disconnectWeather,
+    getWeatherStatus,
 } from "../../api/weather";
 
-export default function WeatherStatusWidget(){
+import type {
+    WeatherStatusData,
+} from "../../api/weather";
 
-    const [status, setStatus] = useState<WeatherStatusData | null>(null);
+import StatusCard from "../Common/StatusCard";
 
+
+export default function WeatherStatusWidget() {
+
+    const [status, setStatus] =
+        useState<WeatherStatusData | null>(null);
+
+    // --------------------------------------------------
+    // Update mount information
+    // --------------------------------------------------
 
     useEffect(() => {
 
-        const update = () => {
-            getWeatherStatus()
-                .then(setStatus)
-                .catch(console.error);
+        const update = async () => {
+
+            try {
+
+                const weatherStatus =
+                    await getWeatherStatus();
+
+                setStatus(weatherStatus);
+
+
+            } catch (error) {
+
+                console.error(error);
+
+            }
+
         };
+
 
         update();
 
-        const timer = setInterval(update,1000000) //this needs changing to a more reasonable value when the ui has been built
+        const timer =
+            setInterval(update, 1000);
 
-        return () => clearInterval(timer);
-        
+        return () =>
+            clearInterval(timer);
 
     }, []);
 
 
-    if (!status) {
-        return(
-            <div className="
-            bg-slate-800
-            rounded-xl
-            p-6
-            shadow-lg
-            border
-            border-slate-700
-            "
-            >
-                <h2 className="text-xl font-bold mb-4 text-white"
-                >Weather Station Status</h2>
+    // --------------------------------------------------
+    // Connect
+    // --------------------------------------------------
 
-                <p className="text-red-400"
-                >
-                    Not connected
+    async function handleConnect() {
+
+    try {
+
+        await connectWeather();
+
+        const weatherStatus =
+            await getWeatherStatus();
+
+        setStatus(weatherStatus);
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+    }
+
+
+    // --------------------------------------------------
+    // Disconnect
+    // --------------------------------------------------
+
+    async function handleDisconnect() {
+
+    try {
+
+        await disconnectWeather();
+
+        const weatherStatus =
+            await getWeatherStatus();
+
+        setStatus(weatherStatus);
+
+    } catch (error) {
+
+        console.error(error);
+
+    }
+    }
+
+    // --------------------------------------------------
+    // No status
+    // --------------------------------------------------
+
+    if (!status) {
+
+        return (
+            <StatusCard
+                title="Weather"
+                status="error"
+            >
+
+                <p className="text-red-400">
+                    Unable to read weather status
                 </p>
 
-                <button onClick={handleConnect}
-                className="mt-4 px-4 py-2 rounded bg-blue-600 hover:bg-blue-700 text-white"
+                <button
+                    onClick={handleConnect}
+                    className="
+                        mt-4
+                        w-full
+                        px-4
+                        py-2
+                        rounded-lg
+                        bg-blue-600
+                        hover:bg-blue-700
+                        transition
+                    "
                 >
                     Connect
                 </button>
-            </div>    
+
+            </StatusCard>
         );
     }
 
-   
 
-    async function handleConnect() {
-        try {
-            await connectWeather();
-            console.log('Weather station connected');
-        } 
-        catch (error) {
-            console.error(error);
-        }
-    }
-
-    async function handleDisconnect() {
-        try {
-            await disconnectWeather();
-            console.log('Weather station disconnected');
-        } 
-        catch (error) {
-            console.error(error);
-        }
-    }
+    // --------------------------------------------------
+    // Mount card
+    // --------------------------------------------------
 
     return (
-        <div className='
-        bg-slate-800
-        rounded-xl
-        p-6
-        shadow-lg
-        border
-        border-slate-700'
-        >
-            <h2>Mount Status</h2>
 
-            <p>
-                Connected: {status.connected ? "Yes" : "No"}
-            </p>
-            <button onClick={status.connected ? handleDisconnect : handleConnect}>
-                {status.connected ? "Disconnect" : "Connect"}
-            </button>   
-        </div>
+        <StatusCard
+            title="Weather"
+            status={
+                status.connected
+                    ? "connected"
+                    : "disconnected"
+            }
+        >
+
+
+            {/* Connection */}
+
+            <button
+                onClick={
+                    status.connected
+                        ? handleDisconnect
+                        : handleConnect
+                }
+                className="
+                    w-full
+                    mt-6
+                    px-4
+                    py-2
+                    rounded-lg
+                    bg-slate-700
+                    hover:bg-slate-600
+                    text-white
+                    transition
+                "
+            >
+
+                {status.connected
+                    ? "Disconnect"
+                    : "Connect"}
+
+            </button>
+
+        </StatusCard>
     );
 }
-
-
-
-   
-

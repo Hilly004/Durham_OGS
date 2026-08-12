@@ -41,6 +41,7 @@ export default function StatusCard({
 
     return (
         <div className="
+            h-full
             bg-slate-900
             rounded-xl
             p-6
