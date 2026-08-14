@@ -1,4 +1,5 @@
 from Controllers.safety_manager import SafetyManager
+from Utilities.Observatory_Logger import ObservatoryLogger
 import time
 import threading
 
@@ -7,6 +8,8 @@ class ObservatoryController:
     def __init__(self, dome, mount, weather):
         self.dome = dome
         self.mount = mount
+        self.weather = weather
+
         self.safety = SafetyManager(
             mount,
             dome,
@@ -15,6 +18,7 @@ class ObservatoryController:
 
         self.running = False
         self.monitor_thread = None
+        self.logger = ObservatoryLogger()
 
     def start(self):
         self.running = True
@@ -45,13 +49,13 @@ class ObservatoryController:
             except Exception as e:
                 print(f'Monitoring error: {e}')
 
-            time.sleep(1000)    #change number eventually
+            time.sleep(10)    #change number eventually
 
     def stop(self):
         self.running = False
 
     def open_dome(self):
-        if not self.safety.is_safe:
+        if not self.safety.is_safe():
             self.logger.warning('Dome opening prevented')
             return False
 
@@ -64,8 +68,8 @@ class ObservatoryController:
         self.dome.close_dome()
 
     def safe_shutdown(self):
+        self.mount.stop_motion()
         self.dome.close_dome()
-        self.mount.park()
 
 
 

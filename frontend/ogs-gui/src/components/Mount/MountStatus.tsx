@@ -81,7 +81,7 @@ export default function MountStatusWidget() {
         update();
 
         const timer =
-            setInterval(update, 1000);
+            setInterval(update, 100000);
 
         return () =>
             clearInterval(timer);

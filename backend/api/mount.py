@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, HTTPException
 from Controllers.Mount_Controller import MountController
+from pydantic import BaseModel
 
 router = APIRouter(
     prefix='/api/mount',
-    tags=['']
+    tags=['Mount']
 )
 
 
@@ -13,19 +14,47 @@ def set_controller(mount_controller: MountController):
     global controller
     controller = mount_controller
 
+def get_controller():
+    if controller is None:
+        raise HTTPException(
+            status_code=503,
+            detail = 'Mount controller is not initialised'
+        )
+
+    return controller
+
+
+class SlewRequest(BaseModel):
+    ra: float
+    dec: float
+
 # -------------------------------------------------------------------------------
 # CONNECTION
 # -------------------------------------------------------------------------------
 
 @router.post('/connect')
 def connect():
-    result = controller.connect()
-    return {'success': result}
+    mount_controller = get_controller()
+
+    result = mount_controller.connect()
+
+    if not result:
+        raise HTTPException(
+            status_code=503,
+            detail='Unable to connenct to mount'
+        )
+
+    return {
+        'success': True
+    }
 
 @router.post('/disconnect')
 def disconnect():
-    result = controller.disconnect()
-    return {'success': result}
+    mount_controller = get_controller()
+
+    mount_controller.disconnect()
+
+    return {'success': True}
 
 # -------------------------------------------------------------------------------
 # GET COMMANDS
@@ -92,3 +121,46 @@ def slew_to_park():
 def unpark():
     result = controller.unpark()
     return {'success': result}
+
+@router.post('/park')
+def park():
+    mount_controller = get_controller()
+
+    result = mount_controller.slew_to_park()
+
+    return {
+        'success': result is not False
+    }
+
+# -------------------------------------------------------------------------------
+# OTHER COMMANDS
+# -------------------------------------------------------------------------------
+
+@router.post('/stop')
+def stop():
+    mount_controller = get_controller()
+
+    result = mount_controller.stop_motion()
+
+    return {
+        'success': result is not False
+    }
+
+@router.post('/slew')
+def slew(request: SlewRequest):
+    mount_controller = get_controller()
+
+    result = mount_controller.slew_to_ra_dec(
+        request.ra,
+        request.dec
+    )
+
+    if not result:
+        raise HTTPException(
+            status_code=400,
+            detail='Mount slew failed'
+        )
+
+    return {
+        'success': True
+    }

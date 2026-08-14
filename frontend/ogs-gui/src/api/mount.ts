@@ -36,6 +36,10 @@ interface PositionApiResponse {
     data: MountPosition;
 }
 
+interface PositionRdApiResponse {
+    success: boolean;
+    data: MountPosition_rd;
+}
 
 export async function getMountPosition(): Promise<MountPosition> {
 
@@ -51,7 +55,7 @@ export async function getMountPosition(): Promise<MountPosition> {
     return result.data;
 }
 
-export async function getMountPosition_rd(): Promise<MountPosition> {
+export async function getMountPosition_rd(): Promise<MountPosition_rd> {
 
     const response = await fetch("/api/mount/position_rd");
 
@@ -59,7 +63,7 @@ export async function getMountPosition_rd(): Promise<MountPosition> {
         throw new Error("Failed to get mount position");
     }
 
-    const result: PositionApiResponse =
+    const result: PositionRdApiResponse =
         await response.json();
 
     return result.data;

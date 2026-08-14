@@ -13,6 +13,9 @@ class AstroHavenDome:
 
     def disconnect(self):
         return self.connection.disconnect()
+    
+    def is_connected(self):
+        return self.connection.is_connected()
 
     #########################################################################
     #                       Open/Close Commands

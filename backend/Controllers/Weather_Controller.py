@@ -1,35 +1,42 @@
-from PySide6.QtCore import QObject, Signal, QTimer
 from Utilities.Observatory_Logger import ObservatoryLogger
 
-class WeatherController(QObject):
-
-    status_changed = Signal(str)
-    connection_changed = Signal(bool)
+class WeatherController:
 
     def __init__(self,monitor):
-        super().__init__()
 
         self.monitor = monitor
         self.logger = ObservatoryLogger()
 
     def connect(self):
-        self.status_changed.emit('Connecting...')
         try:
             self.monitor.connect()
-            self.connection_changed.emit(True)
 
         except Exception as e:
-            self.connection_changed.emit(False)
+            print(f'Weather monitor connection failed: {e}')
+            return False
 
     def disconnect(self):
-        self.status_changed.emit('Disconnecting...')
-        self.monitor.disconnect()
-        self.connection_changed.emit(False)
+        return self.monitor.disconnect()
 
+
+    @property
+    def is_connected(self):
+        return self.monitor.is_connected()
 
     def safe(self):
+        if not self.is_connected:
+            return False
+        try:
+            raining=self.monitor.is_raining()
+            wind_speed=self.monitor.wind_speed()
+            humidity=self.monitor.humidity()
+        
+        except Exception as e:
+            print(f'Unable to determine weather safety: {e}')
+            return False
+
         return(
-            not self.weather.is_raining()
-            and self.weather.wind_speed() < 40
-            and self.weather.humidity() <95
+            not raining
+            and wind_speed<40
+            and humidity<95
         )

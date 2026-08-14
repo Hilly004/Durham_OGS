@@ -36,7 +36,7 @@ class DomeConnection:
         except Exception as e:
             print(f'Connection error: {e}')
             self.connected = False
-            return True
+            return False
         
     def disconnect(self):
 
@@ -45,7 +45,7 @@ class DomeConnection:
             self.connected = False
             print('Disconnected')
 
-    def is_connnected(self):
+    def is_connected(self):
         return self.connected
     
     #########################################################################
@@ -111,6 +111,27 @@ class DomeConnection:
         )
 
         if result.isError():
-            raise RuntimeError(f'Failed to reads coil {address}')
+            raise RuntimeError(f'Failed to read register {address}')
         
         return result.registers[0]
+    
+
+    def write_register(
+            self,
+            address: int,
+            value: int,
+            device_id: int = 1
+    ):
+        if not self.connected:
+            raise ConnectionError('Dome not connected')
+        
+        result = self.client.write_register(
+            address=address,
+            value=value,
+            device_id=device_id
+        )
+
+        if result.isError():
+            raise RuntimeError(f'Failed to write to register {address}')
+        
+        return result

@@ -1,5 +1,3 @@
-import time
-
 class SafetyManager:
 
     def __init__(self, mount, dome, weather):
@@ -10,14 +8,8 @@ class SafetyManager:
     def is_safe(self):
         if not self.weather.is_connected:
             return False
-        
-        if self.weather.last_update is None:
-            return False
 
-        if time.monotonic() - self.weather.last_update >10:
-            return False
-
-        if not self.weather.safe:
+        if not self.weather.safe():
             return False
         
         if self.dome.has_fault:
@@ -27,10 +19,11 @@ class SafetyManager:
 
     
     def can_close_dome(self):
-
+        return True
 
     def can_unpark_mount(self):
-
+        return self.is_safe()
 
     def can_start_observing(self):
+        return self.is_safe()
 

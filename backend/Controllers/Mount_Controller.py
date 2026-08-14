@@ -1,48 +1,82 @@
-from PySide6.QtCore import QObject, Signal, QTimer
 import time
 from Utilities.Observatory_Logger import ObservatoryLogger
 
-class MountController(QObject):
-    
-    status_changed = Signal(str)
-    position_changed = Signal(dict)
-    position_aa_changed = Signal(dict)
-    connection_changed = Signal(bool)
-    park_changed = Signal(bool)
+class MountController:
 
     def __init__(self,mount):
-        super().__init__()
-
 
         self.logger = ObservatoryLogger()
         self.mount = mount
 
-        self.log_timer = QTimer(self)
-        self.log_timer.timeout.connect(self.log_mount_state)
+    def _parse_angle(self, value:str) -> float:
+        value = value.strip().rstrip('#')
+
+        value = value.replace('*',':')
+        parts = value.split(':')
+
+        degrees = float(parts[0])
+        sign = -1 if degrees < 0 else 1
+
+        degrees = abs(degrees)
+
+        minutes = float(parts[1]) if len(parts) > 1 else 0
+        seconds = float(parts[2]) if len(parts) > 2 else 0
+
+        return sign * (
+            degrees
+            + minutes/60
+            + seconds/3600
+        )
+
+    def _parse_ra(self, value: str) -> float:
+        value = value.strip().rstrip('#')
+
+        parts = value.split(':')
+
+        hours = float(parts[0])
+        minutes = float(parts[1]) if len(parts) > 1 else 0
+        seconds = float(parts[2]) if len(parts) > 2 else 0
+
+        return (
+            hours
+            + minutes / 60
+            + seconds / 3600
+        )
+    
+    def _format_ra(self, ra_hours: float) -> str:
+        ra_hours = ra_hours % 24
+
+        hours = int(ra_hours)
+        minutes_float = (ra_hours - hours) * 60
+        minutes = int(minutes_float)
+        seconds = (minutes_float - minutes) * 60
+
+        return f"{hours:02d}:{minutes:02d}:{seconds:05.2f}"
+
+
+    def _format_dec(self, dec_degrees: float) -> str:
+        sign = '+' if dec_degrees >= 0 else '-'
+
+        dec_degrees = abs(dec_degrees)
+
+        degrees = int(dec_degrees)
+        minutes_float = (dec_degrees - degrees) * 60
+        minutes = int(minutes_float)
+        seconds = (minutes_float - minutes) * 60
+
+        return f"{sign}{degrees:02d}*{minutes:02d}:{seconds:04.1f}"
+
+
     #### Connection ####
 
     def connect(self):
-        self.status_changed.emit('Connecting...')
-        try:
-            self.mount.connect()
-            self.connection_changed.emit(True)
-            self.status_changed.emit('Connected')
-            self.log_timer.start(10000)
+        self.mount.connect()
 
-        except Exception as e:
-            self.connection_changed.emit(False)
-            self.status_changed.emit(f'Connection failed: {e}')
 
     def disconnect(self):
-        self.log_timer.stop()
-        self.status_changed.emit('Disconnecting...')
         self.mount.disconnect()
-        self.connection_changed.emit(False)
-        self.status_changed.emit('Mount not connected')
-        
     
     def is_connected(self):
-
         return self.mount.is_connected()
      
     #### Movement ####
@@ -82,19 +116,36 @@ class MountController(QObject):
 
     def start_tracking(self):
         self.mount.start_tracking()
-        self.status_changed.emit('Tracking started')
 
     def stop_tracking(self):
         self.mount.stop_tracking()
-        self.status_changed.emit('Tracking stopped')
 
+    def slew_to_ra_dec(self, ra: float, dec: float):
+        ra_string = self._format_ra(ra)
+        dec_string = self._format_dec(dec)
+
+        ra_result = self.mount.set_target_ra(ra_string)
+
+        if str(ra_result).strip('#') != '1':
+            return False
+
+        dec_result = self.mount.set_target_declination(dec_string)
+
+        if str(dec_result).strip('#') != '1':
+            return False
+
+        result = self.mount.slew_to_target()
+
+        return str(result).strip('#') == '0'
     #### Get ####
 
     def get_ra(self):
-        return self.mount.get_telescope_ra()
+        value = self.mount.get_telescope_ra()
+        return self._parse_ra(value)
 
     def get_dec(self):
-        return self.mount.get_telescope_dec()
+        value = self.mount.get_telescope_dec()
+        return self._parse_angle(value)
     
     def get_ra_dec(self):
         return {
@@ -103,10 +154,12 @@ class MountController(QObject):
         }
     
     def get_alt(self):
-        return self.mount.get_telescope_altitude()
+        value = self.mount.get_telescope_altitude()
+        return self._parse_angle(value)
     
     def get_az(self):
-        return self.mount.get_telescope_azimuth()
+        value = self.mount.get_telescope_azimuth()
+        return self._parse_angle(value)
 
     def get_alt_az(self):
         return {
@@ -128,7 +181,6 @@ class MountController(QObject):
             'ra':self.mount.get_telescope_ra(),
             'dec':self.mount.get_telescope_dec()
         }
-        self.position_changed.emit(position)
         return position
     
     def update_position_aa(self):
@@ -136,7 +188,6 @@ class MountController(QObject):
             'alt':self.mount.get_telescope_altitude(),
             'az':self.mount.get_telescope_azimuth()
         }
-        self.position_aa_changed.emit(position_aa)
         return position_aa
     
     def get_info(self):
@@ -157,9 +208,6 @@ class MountController(QObject):
         if not self.mount.is_connected():
             return
 
-        self.logger.log(self.get_info()
-        )
-
     def get_status(self):
 
         if not self.mount.is_connected():
@@ -176,16 +224,13 @@ class MountController(QObject):
 
     def slew_to_park(self):
         self.mount.slew_to_park()
-        self.park_changed.emit(True)
 
     def set_park_position(self):
         self.mount.set_park()
-        self.park_changed.emit(True)
         
 
     def unpark(self):
         self.mount.unpark()
-        self.park_changed.emit(False)
 
     def get_home_status(self):
         return self.mount.query_home_status()

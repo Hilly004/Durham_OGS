@@ -46,7 +46,7 @@ export default function WeatherStatusWidget() {
         update();
 
         const timer =
-            setInterval(update, 1000);
+            setInterval(update, 100000);
 
         return () =>
             clearInterval(timer);
