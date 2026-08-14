@@ -1,4 +1,6 @@
 import socket
+import threading
+
 from Utilities.Config import *
 class MountConnection:
 
@@ -8,6 +10,8 @@ class MountConnection:
 
         self.socket = None
         self.connected = False
+
+        self.command_lock = threading.Lock()
 
 
     def connect(self):
@@ -45,15 +49,33 @@ class MountConnection:
             raise RuntimeError('Mount not connected')
         self.socket.sendall(message.encode())
 
-    def receive(self):
-        return self.socket.recv(1024).decode()
+    def receive(self, terminator='#'):
+        if not self.connected or self.socket is None:
+            raise RuntimeError('Mount not connected')
 
-    def send_receive(self,message):
+        response = ''
+
+        while True:
+            chunk = self.socket.recv(1024).decode()
+
+            if not chunk:
+                raise ConnectionError('Mount connection closed')
+
+            response += chunk
+
+            if terminator is None:
+                return response
+
+            if terminator in response:
+                return response
+
+    def send_receive(self,message, terminator='#'):
         if not self.connected:
             raise RuntimeError('Mount not connected')
         try:
-            self.send(message)
-            return self.receive()
+            with self.command_lock:
+                self.send(message)
+                return self.receive(terminator)
         
         except socket.error:
             self.disconnect()

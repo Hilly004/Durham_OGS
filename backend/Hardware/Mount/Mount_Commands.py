@@ -6,9 +6,9 @@ class TenMicronMount:
 
     ###### Helper Functions ######
 
-    def query(self, command):
+    def query(self, command, terminator='#'):
         # Send a command and wait for a response
-        return self.connection.send_receive(command)
+        return self.connection.send_receive(command,terminator)
 
     def command(self, command):
         # Send a command without waiting for a response
@@ -35,7 +35,7 @@ class TenMicronMount:
         Returns: 'L' if tracking is off, 'P' if tracking is on.
         """
         message = '\x06'
-        return self.query(message)
+        return self.query(message, terminator=None)
 
     def stop_tracking(self):
         """Stop tracking.

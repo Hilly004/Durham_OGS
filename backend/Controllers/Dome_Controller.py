@@ -10,7 +10,7 @@ class DomeController:
         try:
             self.dome.connect()
         except Exception as e:
-            print(f'Dome connection failed: {e}')
+            self.logger.error(f'Dome connection failed: {e}')
             return False
 
     def disconnect(self):

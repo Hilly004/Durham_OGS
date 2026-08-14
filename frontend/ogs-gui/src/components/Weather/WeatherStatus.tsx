@@ -15,11 +15,15 @@ import StatusCard from "../Common/StatusCard";
 
 export default function WeatherStatusWidget() {
 
-    const [status, setStatus] =
-        useState<WeatherStatusData | null>(null);
+    const [status, setStatus] = useState<WeatherStatusData>({
+    connected: false,
+    safe: false,
+    state: "unknown",
+    reason: null
+});
 
     // --------------------------------------------------
-    // Update mount information
+    // Update weather information
     // --------------------------------------------------
 
     useEffect(() => {
@@ -100,25 +104,71 @@ export default function WeatherStatusWidget() {
     }
 
     // --------------------------------------------------
-    // No status
+    // Weather card
     // --------------------------------------------------
 
-    if (!status) {
+    return (
+    <StatusCard
+        title="Weather"
+        status={
+            status.state === "safe"
+                ? "safe"
+                : status.state === "unsafe"
+                    ? "error"
+                    : "warning"
+}
+    >
 
-        return (
-            <StatusCard
-                title="Weather"
-                status="error"
-            >
+        <div className="flex items-center justify-between">
 
-                <p className="text-red-400">
-                    Unable to read weather status
+            <span className="text-sm text-slate-400">
+                Connection
+            </span>
+
+            <span className="text-sm">
+                {status.connected
+                    ? "Connected"
+                    : "Disconnected"}
+            </span>
+
+        </div>
+
+
+        <div className="mt-4">
+
+            {status.reason && (
+                <p className="text-xs text-slate-400 mt-1">
+                    {status.reason}
                 </p>
+            )}
+
+        </div>
+
+
+        <div className="mt-4">
+
+            {status.connected ? (
+
+                <button
+                    onClick={handleDisconnect}
+                    className="
+                        w-full
+                        px-4
+                        py-2
+                        rounded-lg
+                        bg-red-600
+                        hover:bg-red-700
+                        transition
+                    "
+                >
+                    Disconnect
+                </button>
+
+            ) : (
 
                 <button
                     onClick={handleConnect}
                     className="
-                        mt-4
                         w-full
                         px-4
                         py-2
@@ -131,54 +181,10 @@ export default function WeatherStatusWidget() {
                     Connect
                 </button>
 
-            </StatusCard>
-        );
-    }
+            )}
 
+        </div>
 
-    // --------------------------------------------------
-    // Mount card
-    // --------------------------------------------------
-
-    return (
-
-        <StatusCard
-            title="Weather"
-            status={
-                status.connected
-                    ? "connected"
-                    : "disconnected"
-            }
-        >
-
-
-            {/* Connection */}
-
-            <button
-                onClick={
-                    status.connected
-                        ? handleDisconnect
-                        : handleConnect
-                }
-                className="
-                    w-full
-                    mt-6
-                    px-4
-                    py-2
-                    rounded-lg
-                    bg-slate-700
-                    hover:bg-slate-600
-                    text-white
-                    transition
-                "
-            >
-
-                {status.connected
-                    ? "Disconnect"
-                    : "Connect"}
-
-            </button>
-
-        </StatusCard>
-    );
+    </StatusCard>
+);
 }

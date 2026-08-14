@@ -1,19 +1,26 @@
 from fastapi import FastAPI
-
+from contextlib import asynccontextmanager
 
 from api.mount import (
     router as mount_router,
-    set_controller as set_mount_controller
+    set_controller as set_mount_controller,
+    set_observatory_controller as set_mount_observatory_controller
 )
 
 from api.dome import (
     router as dome_router,
-    set_controller as set_dome_controller
+    set_controller as set_dome_controller,
+    set_observatory_controller as set_dome_observatory_controller
 )
 
 from api.weather import (
     router as weather_router,
     set_controller as set_weather_controller
+)
+
+from api.observatory import (
+    router as observatory_router,
+    set_controller as set_observatory_controller
 )
 
 from Controllers.Mount_Controller import MountController
@@ -30,7 +37,18 @@ from Utilities.Config import dome_host,dome_port
 from Controllers.Weather_Controller import WeatherController
 from Hardware.Weather.Weather_Commands import WeatherMonitor
 
-app = FastAPI(title="Durham OGS API")
+from Observatory import ObservatoryController
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    observatory_controller.start()
+
+    try:
+        yield
+    finally:
+        observatory_controller.stop()
+
+app = FastAPI(title="Durham OGS API", lifespan=lifespan)
 
 
 ###  MOUNT  ###
@@ -51,9 +69,28 @@ weather_monitor = WeatherMonitor()
 weather_controller = WeatherController(weather_monitor)
 set_weather_controller(weather_controller)
 
+observatory_controller = ObservatoryController(
+    dome_controller,
+    mount_controller,
+    weather_controller
+)
+
+set_observatory_controller(observatory_controller)
+
+set_dome_observatory_controller(
+    observatory_controller
+)
+
+set_mount_observatory_controller(
+    observatory_controller
+)
+
+observatory_controller.start()
+
 app.include_router(mount_router)
 app.include_router(dome_router)
 app.include_router(weather_router)
+app.include_router(observatory_router)
 
 
 

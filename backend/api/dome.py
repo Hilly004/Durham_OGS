@@ -8,7 +8,23 @@ router = APIRouter(
 
 controller: DomeController | None = None
 
+observatory_controller = None
 
+
+def set_observatory_controller(controller):
+    global observatory_controller
+    observatory_controller = controller
+
+
+def get_observatory_controller():
+    if observatory_controller is None:
+        raise HTTPException(
+            status_code=503,
+            detail='Observatory controller is not initialised'
+        )
+
+    return observatory_controller
+ 
 def set_controller(dome_controller: DomeController):
     global controller
     controller = dome_controller
@@ -54,19 +70,32 @@ def status():
 
 @router.post('/open')
 def open_dome():
-    dome_controller = get_controller()
+    observatory = get_observatory_controller()
 
-    result = dome_controller.open_dome()
+    result = observatory.open_dome()
+
+    if not result:
+        raise HTTPException(
+            status_code=409,
+            detail='Dome opening prevented by observatory safety system'
+        )
 
     return {
-        'success': result is not False
+        'success': True
     }
 
 @router.post('/close')
 def close_dome():
-    dome_controller = get_controller()
+    observatory = get_observatory_controller()
 
-    result = dome_controller.close_dome()
+    try:
+        result = observatory.close_dome()
+
+    except ConnectionError:
+        raise HTTPException(
+            status_code=503,
+            detail='Dome not connected'
+        )
 
     return {
         'success': result is not False
@@ -74,20 +103,33 @@ def close_dome():
 
 @router.post('/open_one')
 def open_one():
-    dome_controller = get_controller()
+    observatory = get_observatory_controller()
 
-    result = dome_controller.open_left()
+    result = observatory.open_left()
+
+    if not result:
+        raise HTTPException(
+            status_code=409,
+            detail='Left dome opening prevented by observatory safety system'
+        )
 
     return {
-        'success': result is not False
+        'success': True
     }
 
 
 @router.post('/close_one')
 def close_one():
-    dome_controller = get_controller()
+    observatory = get_observatory_controller()
 
-    result = dome_controller.close_left()
+    try:
+        result = observatory.close_left()
+
+    except ConnectionError:
+        raise HTTPException(
+            status_code=503,
+            detail='Dome not connected'
+        )
 
     return {
         'success': result is not False
@@ -95,20 +137,26 @@ def close_one():
 
 @router.post('/open_two')
 def open_two():
-    dome_controller = get_controller()
+    observatory = get_observatory_controller()
 
-    result = dome_controller.open_right()
+    try:
+        result = observatory.close_right()
+
+    except ConnectionError:
+        raise HTTPException(
+            status_code=503,
+            detail='Dome not connected'
+        )
 
     return {
         'success': result is not False
     }
 
-
 @router.post('/close_two')
 def close_two():
-    dome_controller = get_controller()
+    observatory = get_observatory_controller()
 
-    result = dome_controller.close_right()
+    result = observatory.close_right()
 
     return {
         'success': result is not False

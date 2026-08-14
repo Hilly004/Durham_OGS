@@ -1,7 +1,9 @@
 export interface WeatherStatusData {
-    connected: boolean
+    connected: boolean;
+    safe: boolean;
+    state: "safe" | "unsafe" | "unknown";
+    reason: string | null;
 }
-
 interface ApiResponse {
     success: boolean;
     data: WeatherStatusData;

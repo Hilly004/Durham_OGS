@@ -9,6 +9,20 @@ router = APIRouter(
 
 
 controller: MountController = None
+observatory_controller = None
+
+def set_observatory_controller(controller):
+    global observatory_controller
+    observatory_controller = controller
+
+def get_observatory_controller():
+    if observatory_controller is None:
+        raise HTTPException(
+            status_code=503,
+            detail='Observatory controller is not initialised'
+        )
+
+    return observatory_controller
 
 def set_controller(mount_controller: MountController):
     global controller
@@ -119,8 +133,19 @@ def slew_to_park():
 
 @router.post('/unpark')
 def unpark():
-    result = controller.unpark()
-    return {'success': result}
+    observatory = get_observatory_controller()
+
+    result = observatory.unpark_mount()
+
+    if not result:
+        raise HTTPException(
+            status_code=409,
+            detail='Mount unpark prevented by observatory safety system'
+        )
+
+    return {
+        'success': True
+    }
 
 @router.post('/park')
 def park():
@@ -148,17 +173,33 @@ def stop():
 
 @router.post('/slew')
 def slew(request: SlewRequest):
-    mount_controller = get_controller()
+    observatory = get_observatory_controller()
 
-    result = mount_controller.slew_to_ra_dec(
+    result = observatory.slew_mount(
         request.ra,
         request.dec
     )
 
     if not result:
         raise HTTPException(
-            status_code=400,
-            detail='Mount slew failed'
+            status_code=409,
+            detail='Mount slew prevented by observatory safety system'
+        )
+
+    return {
+        'success': True
+    }
+
+@router.post('/start_tracking')
+def start_tracking():
+    observatory = get_observatory_controller()
+
+    result = observatory.start_tracking()
+
+    if not result:
+        raise HTTPException(
+            status_code=409,
+            detail='Mount tracking start prevented by observatory safety system'
         )
 
     return {

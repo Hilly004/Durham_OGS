@@ -70,7 +70,11 @@ class MountController:
     #### Connection ####
 
     def connect(self):
-        self.mount.connect()
+        try:
+            self.mount.connect()
+        except Exception as e:
+            self.logger.error(f'Mount connection failed: {e}')
+            return False
 
 
     def disconnect(self):

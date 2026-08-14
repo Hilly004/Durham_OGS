@@ -102,10 +102,17 @@ export default function DomeStatusWidget() {
     >
 
         <div className="text-2xl font-semibold">
-            Open
+            {status.moving ? 
+                'Moving'
+                : status.isOpen ?
+                'Open':'Closed'}
         </div>
 
-
+        {status.fault && (
+            <p className="mt-2 text-red-400">
+                Dome fault detected
+            </p>
+        )}
         {/* Connection button */}
 
         <button

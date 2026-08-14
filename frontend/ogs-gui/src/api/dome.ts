@@ -1,6 +1,8 @@
 export interface DomeStatusData {
     connected: boolean;
     isOpen: boolean;
+    moving: boolean;
+    fault: boolean;
 }
 
 interface ApiResponse {
