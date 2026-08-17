@@ -72,7 +72,14 @@ def status():
 def open_dome():
     observatory = get_observatory_controller()
 
-    result = observatory.open_dome()
+    try:
+        result = observatory.open_dome()
+
+    except ConnectionError:
+        raise HTTPException(
+            status_code=503,
+            detail='Dome not connected'
+        )
 
     if not result:
         raise HTTPException(
@@ -105,7 +112,14 @@ def close_dome():
 def open_one():
     observatory = get_observatory_controller()
 
-    result = observatory.open_left()
+    try:
+        result = observatory.open_left()
+
+    except ConnectionError:
+        raise HTTPException(
+            status_code=503,
+            detail='Dome not connected'
+        )
 
     if not result:
         raise HTTPException(

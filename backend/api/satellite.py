@@ -8,21 +8,82 @@ from schemas.satellite import (
     PassPredictionResponse,
     TrackingStatusResponse,
 )
-from Controllers.Satellite_Service import SatelliteService
+from Controllers.satellite_service import SatelliteService
+
+from Repository.SatelliteRepo import SatelliteRepository
 
 router = APIRouter()
+mount = None
 
+def set_mount(mount_driver):
+    global mount
+    mount = mount_driver
 
-@router.get("/", response_model=list[SatelliteResponse])
-def list_satellites(db: Session = Depends(get_db)):
-    service = SatelliteService(db)
-    return service.list_satellites()
+def get_mount():
+    if mount is None:
+        raise HTTPException(
+            status_code=503,
+            detail='Mount is not initialised'
+        )
+
+    return mount
+
+    
+
+@router.post("/", response_model=SatelliteResponse)
+def create_satellite(
+    satellite: SatelliteCreate,
+    db: Session = Depends(get_db),
+):
+    repository = SatelliteRepository(db)
+
+    service = SatelliteService(
+        repository,
+        get_mount()
+    )
+
+    try:
+        return service.create_satellite(satellite)
+
+    except ValueError as e:
+        message = str(e)
+
+        if (
+            'already exists' in message
+            or 'already stored' in message
+        ):
+            raise HTTPException(
+                status_code=409,
+                detail=message
+            )
+
+        raise HTTPException(
+            status_code=400,
+            detail=message
+        )
 
 
 @router.get("/{satellite_id}", response_model=SatelliteResponse)
-def get_satellite(satellite_id: int, db: Session = Depends(get_db)):
-    service = SatelliteService(db)
-    return service.get_satellite(satellite_id)
+def get_satellite(
+    satellite_id: int,
+    db: Session = Depends(get_db)
+):
+    repository = SatelliteRepository(db)
+
+    service = SatelliteService(
+        repository,
+        get_mount()
+    )
+
+    satellite = service.get_satellite(satellite_id)
+
+    if satellite is None:
+        raise HTTPException(
+            status_code=404,
+            detail='Satellite not found'
+        )
+
+    return satellite
 
 
 @router.post("/", response_model=SatelliteResponse)
@@ -30,7 +91,13 @@ def create_satellite(
     satellite: SatelliteCreate,
     db: Session = Depends(get_db),
 ):
-    service = SatelliteService(db)
+    repository = SatelliteRepository(db)
+
+    service = SatelliteService(
+        repository,
+        get_mount()
+    )
+
     return service.create_satellite(satellite)
 
 
@@ -39,7 +106,21 @@ def delete_satellite(
     satellite_id: int,
     db: Session = Depends(get_db),
 ):
-    service = SatelliteService(db)
-    service.delete_satellite(satellite_id)
+    repository = SatelliteRepository(db)
 
-    return {"message": "Satellite deleted"}
+    service = SatelliteService(
+        repository,
+        get_mount()
+    )
+
+    deleted = service.delete_satellite(satellite_id)
+
+    if not deleted:
+        raise HTTPException(
+            status_code=404,
+            detail='Satellite not found'
+        )
+
+    return {
+        "message": "Satellite deleted"
+    }

@@ -23,6 +23,11 @@ from api.observatory import (
     set_controller as set_observatory_controller
 )
 
+from api.satellite import (
+    router as satellite_router,
+    set_mount as set_satellite_mount
+)
+
 from Controllers.Mount_Controller import MountController
 from Hardware.Mount.Mount_Commands import TenMicronMount
 from Hardware.Connections.Mount_Connection import MountConnection
@@ -39,6 +44,9 @@ from Hardware.Weather.Weather_Commands import WeatherMonitor
 
 from Observatory import ObservatoryController
 
+from database.database import Base, engine
+from models.satellite import Satellite
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     observatory_controller.start()
@@ -47,6 +55,8 @@ async def lifespan(app: FastAPI):
         yield
     finally:
         observatory_controller.stop()
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Durham OGS API", lifespan=lifespan)
 
@@ -68,6 +78,12 @@ set_dome_controller(dome_controller)
 weather_monitor = WeatherMonitor()
 weather_controller = WeatherController(weather_monitor)
 set_weather_controller(weather_controller)
+
+### SATELLITE ###
+
+set_satellite_mount(mount_driver)
+
+
 
 observatory_controller = ObservatoryController(
     dome_controller,
@@ -91,7 +107,11 @@ app.include_router(mount_router)
 app.include_router(dome_router)
 app.include_router(weather_router)
 app.include_router(observatory_router)
-
+app.include_router(
+    satellite_router,
+    prefix='/api/satellites',
+    tags=['satellites']
+)
 
 
 @app.get('/')

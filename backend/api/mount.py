@@ -135,7 +135,22 @@ def slew_to_park():
 def unpark():
     observatory = get_observatory_controller()
 
-    result = observatory.unpark_mount()
+    try:
+        result = observatory.unpark_mount()
+
+    except ConnectionError:
+        raise HTTPException(
+            status_code=503,
+            detail='Mount not connected'
+        )
+
+    except RuntimeError as e:
+        if 'Mount not connected' in str(e):
+            raise HTTPException(
+                status_code=503,
+                detail='Mount not connected'
+            )
+        raise
 
     if not result:
         raise HTTPException(
@@ -151,7 +166,23 @@ def unpark():
 def park():
     mount_controller = get_controller()
 
-    result = mount_controller.slew_to_park()
+    try:
+        result = mount_controller.slew_to_park()
+
+    except ConnectionError:
+        raise HTTPException(
+            status_code=503,
+            detail='Mount not connected'
+        )
+
+    except RuntimeError as e:
+        if 'Mount not connected' in str(e):
+            raise HTTPException(
+                status_code=503,
+                detail='Mount not connected'
+            )
+
+        raise
 
     return {
         'success': result is not False
@@ -165,7 +196,22 @@ def park():
 def stop():
     mount_controller = get_controller()
 
-    result = mount_controller.stop_motion()
+    try:
+        result = mount_controller.stop_motion()
+
+    except ConnectionError:
+        raise HTTPException(
+            status_code=503,
+            detail='Mount not connected'
+        )
+
+    except RuntimeError as e:
+        if 'Mount not connected' in str(e):
+            raise HTTPException(
+                status_code=503,
+                detail='Mount not connected'
+            )
+        raise
 
     return {
         'success': result is not False
@@ -175,10 +221,25 @@ def stop():
 def slew(request: SlewRequest):
     observatory = get_observatory_controller()
 
-    result = observatory.slew_mount(
-        request.ra,
-        request.dec
-    )
+    try:
+        result = observatory.slew_mount(
+            request.ra,
+            request.dec
+        )
+
+    except ConnectionError:
+        raise HTTPException(
+            status_code=503,
+            detail='Mount not connected'
+        )
+
+    except RuntimeError as e:
+        if 'Mount not connected' in str(e):
+            raise HTTPException(
+                status_code=503,
+                detail='Mount not connected'
+            )
+        raise
 
     if not result:
         raise HTTPException(
@@ -194,7 +255,22 @@ def slew(request: SlewRequest):
 def start_tracking():
     observatory = get_observatory_controller()
 
-    result = observatory.start_tracking()
+    try:
+        result = observatory.start_tracking()
+
+    except ConnectionError:
+        raise HTTPException(
+            status_code=503,
+            detail='Mount not connected'
+        )
+
+    except RuntimeError as e:
+        if 'Mount not connected' in str(e):
+            raise HTTPException(
+                status_code=503,
+                detail='Mount not connected'
+            )
+        raise
 
     if not result:
         raise HTTPException(
