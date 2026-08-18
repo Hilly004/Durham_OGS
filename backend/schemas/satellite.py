@@ -50,9 +50,16 @@ class SatelliteResponse(BaseModel):
         from_attributes=True
     )
 
+class PassPredictionData(BaseModel):
+    found: bool
+    start_jd: float | None = None
+    end_jd: float | None = None
+    flags: str | None = None
+
+
 class PassPredictionResponse(BaseModel):
     success: bool
-    data: dict | None = None
+    data: PassPredictionData | None = None
 
 
 class TrackingStatusResponse(BaseModel):

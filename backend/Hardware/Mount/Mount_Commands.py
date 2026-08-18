@@ -1959,6 +1959,25 @@ class TenMicronMount:
     #                 Satellite Orbital Elements Commands
     #########################################################################
 
+    def _escape_string(self, data: str) -> str:
+        escaped = ""
+
+        for char in data:
+            code = ord(char)
+
+            if char == "$":
+                escaped += "$$"
+            elif char == "#":
+                escaped += "$23"
+            elif char == ",":
+                escaped += "$2C"
+            elif code < 0x20 or code > 0x7E:
+                escaped += f"${code:02X}"
+            else:
+                escaped += char
+
+        return escaped
+
     def load_tle_from_database(self, n):
         """Load a satellite's orbital elements from the mount's onboard TLE database.
         Format: n = index into the database, 1 to value returned by get_tle_database_count().
@@ -1982,14 +2001,18 @@ class TenMicronMount:
         """
         message = ':TLEG#'
         return self.query(message)
-
+    
     def write_storage(self, data):
+        escaped_data = self._escape_string(data)
+
         """Load satellite orbital elements directly, in two-line format (writes to the mount's active TLE slot).
         Format: data = escaped two-line-element string; optional satellite name line, then the two TLE lines,
         each terminated by escaped newline (\\n) and/or carriage return (\\r).
         Returns: 'E#' invalid format, 'V#' valid format. Available from v2.13.20.
         """
-        message = ':TLEL0' + data + '#'
+
+        message = ':TLEL0' + escaped_data + '#'
+
         return self.query(message)
 
     def get_satellite_altaz(self, jd):

@@ -1,11 +1,8 @@
-import time
-from Utilities.Observatory_Logger import ObservatoryLogger
-
 class MountController:
 
-    def __init__(self,mount):
+    def __init__(self,mount,logger):
 
-        self.logger = ObservatoryLogger()
+        self.logger = logger
         self.mount = mount
 
     def _parse_angle(self, value:str) -> float:
@@ -72,13 +69,32 @@ class MountController:
     def connect(self):
         try:
             self.mount.connect()
+            self.logger.success(
+                'Mount connected',
+                source='MOUNT'
+            )
+            return True
+
         except Exception as e:
-            self.logger.error(f'Mount connection failed: {e}')
+            self.logger.error(f'Mount connection failed: {e}',
+                              source='MOUNT')
             return False
 
 
     def disconnect(self):
-        self.mount.disconnect()
+        try:
+            self.mount.disconnect()
+            self.logger.info(
+                'Mount disconnected',
+                source='MOUNT'
+            )
+            return True
+
+        except Exception as e:
+            self.logger.error(
+                f'Mount disconnect failed: {e}',
+                              source='MOUNT')
+            return False
     
     def is_connected(self):
         return self.mount.is_connected()

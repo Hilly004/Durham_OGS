@@ -1,52 +1,73 @@
 import {
-  BrowserRouter,
-  Routes,
-  Route
-} from "react-router-dom"
+    BrowserRouter,
+    Routes,
+    Route,
+} from "react-router-dom";
+
+import {
+    ObservatoryStatusProvider,
+} from "./context/ObservatoryStatusContext";
 
 import Layout from "./components/Layout/Layout";
 
 import Home from "./pages/Home";
-import Mount from "./pages/MountPage";
-import Dome from "./pages/DomePage";
-import Settings from "./pages/SettingsPage";
+import MountPage from "./pages/MountPage";
+import DomePage from "./pages/DomePage";
+import WeatherPage from "./pages/WeatherPage";
+import SatellitePage from "./pages/SatellitePage";
+import SettingsPage from "./pages/SettingsPage";
+
 
 export default function App() {
-  return (
 
-    <BrowserRouter>
+    return (
+        <ObservatoryStatusProvider>
 
-      <Routes>
+            <BrowserRouter>
 
-        <Route 
-          path='/'
-          element={<Layout />}
-        >
-          <Route 
-            path='/'
-            element={<Home />}
-          />
+                <Routes>
 
-          <Route 
-            path='/mount'
-            element={<Mount />}
-          />
+                    <Route
+                        path="/"
+                        element={<Layout />}
+                    >
 
-          <Route 
-            path='/dome'
-            element={<Dome />}
-          />
+                        <Route
+                            index
+                            element={<Home />}
+                        />
 
-          <Route
-            path='/settings'
-            element={<Settings />}
-          />
+                        <Route
+                            path="mount"
+                            element={<MountPage />}
+                        />
 
-        </Route>
+                        <Route
+                            path="dome"
+                            element={<DomePage />}
+                        />
 
-      </Routes>
+                        <Route
+                            path="weather"
+                            element={<WeatherPage />}
+                        />
 
-    </BrowserRouter>
+                        <Route
+                            path="tracking"
+                            element={<SatellitePage />}
+                        />
 
-  );
+                        <Route
+                            path="settings"
+                            element={<SettingsPage />}
+                        />
+
+                    </Route>
+
+                </Routes>
+
+            </BrowserRouter>
+
+        </ObservatoryStatusProvider>
+    );
 }

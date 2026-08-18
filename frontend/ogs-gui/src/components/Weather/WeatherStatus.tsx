@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import {
+    useEffect,
+    useState,
+} from "react";
 
 import {
-    connectWeather,
-    disconnectWeather,
     getWeatherStatus,
 } from "../../api/weather";
 
@@ -10,25 +11,22 @@ import type {
     WeatherStatusData,
 } from "../../api/weather";
 
-import StatusCard from "../Common/StatusCard";
+import DashboardStatusCard
+    from "../Common/DashboardStatusCard";
+
+import DashboardStatusRow
+    from "../Common/DashboardStatusRow";
 
 
 export default function WeatherStatusWidget() {
 
-    const [status, setStatus] = useState<WeatherStatusData>({
-    connected: false,
-    safe: false,
-    state: "unknown",
-    reason: null
-});
+    const [status, setStatus] =
+        useState<WeatherStatusData | null>(null);
 
-    // --------------------------------------------------
-    // Update weather information
-    // --------------------------------------------------
 
     useEffect(() => {
 
-        const update = async () => {
+        async function update() {
 
             try {
 
@@ -37,154 +35,111 @@ export default function WeatherStatusWidget() {
 
                 setStatus(weatherStatus);
 
-
             } catch (error) {
 
-                console.error(error);
+                console.error(
+                    "Unable to retrieve weather status:",
+                    error
+                );
+
+                setStatus(null);
 
             }
 
-        };
+        }
 
 
         update();
 
-        const timer =
-            setInterval(update, 100000);
+        const interval = setInterval(
+            update,
+            3000
+        );
 
-        return () =>
-            clearInterval(timer);
+
+        return () => {
+            clearInterval(interval);
+        };
 
     }, []);
 
 
-    // --------------------------------------------------
-    // Connect
-    // --------------------------------------------------
-
-    async function handleConnect() {
-
-    try {
-
-        await connectWeather();
-
-        const weatherStatus =
-            await getWeatherStatus();
-
-        setStatus(weatherStatus);
-
-    } catch (error) {
-
-        console.error(error);
-
-    }
-    }
+    const conditions =
+        !status
+            ? "Unknown"
+            : status.state.toUpperCase();
 
 
-    // --------------------------------------------------
-    // Disconnect
-    // --------------------------------------------------
+    const override =
+        status?.override === true
+            ? "Force Safe"
+            : status?.override === false
+                ? "Force Unsafe"
+                : "Auto";
 
-    async function handleDisconnect() {
-
-    try {
-
-        await disconnectWeather();
-
-        const weatherStatus =
-            await getWeatherStatus();
-
-        setStatus(weatherStatus);
-
-    } catch (error) {
-
-        console.error(error);
-
-    }
-    }
-
-    // --------------------------------------------------
-    // Weather card
-    // --------------------------------------------------
 
     return (
-    <StatusCard
-        title="Weather"
-        status={
-            status.state === "safe"
-                ? "safe"
-                : status.state === "unsafe"
-                    ? "error"
-                    : "warning"
-}
-    >
+        <DashboardStatusCard
+            title="Weather"
+            connected={
+                status?.connected ?? false
+            }
+        >
 
-        <div className="flex items-center justify-between">
+            <div className="space-y-1">
 
-            <span className="text-sm text-slate-400">
-                Connection
-            </span>
-
-            <span className="text-sm">
-                {status.connected
-                    ? "Connected"
-                    : "Disconnected"}
-            </span>
-
-        </div>
+                <DashboardStatusRow
+                    label="Conditions"
+                    value={conditions}
+                    valueClassName={
+                        status?.state === "safe"
+                            ? "text-green-400"
+                            : status?.state === "unsafe"
+                                ? "text-red-400"
+                                : "text-slate-400"
+                    }
+                />
 
 
-        <div className="mt-4">
+                <DashboardStatusRow
+                    label="Actual"
+                    value={
+                        status
+                            ? status.actualSafe
+                                ? "SAFE"
+                                : "UNSAFE"
+                            : "--"
+                    }
+                    valueClassName={
+                        status?.actualSafe
+                            ? "text-green-400"
+                            : "text-red-400"
+                    }
+                />
 
-            {status.reason && (
-                <p className="text-xs text-slate-400 mt-1">
-                    {status.reason}
-                </p>
-            )}
 
-        </div>
+                <DashboardStatusRow
+                    label="Override"
+                    value={override}
+                    valueClassName={
+                        status?.override !== null &&
+                        status?.override !== undefined
+                            ? "text-amber-400"
+                            : "text-slate-300"
+                    }
+                />
 
 
-        <div className="mt-4">
+                <DashboardStatusRow
+                    label="Reason"
+                    value={
+                        status?.reason ??
+                        "No restrictions"
+                    }
+                />
 
-            {status.connected ? (
+            </div>
 
-                <button
-                    onClick={handleDisconnect}
-                    className="
-                        w-full
-                        px-4
-                        py-2
-                        rounded-lg
-                        bg-red-600
-                        hover:bg-red-700
-                        transition
-                    "
-                >
-                    Disconnect
-                </button>
-
-            ) : (
-
-                <button
-                    onClick={handleConnect}
-                    className="
-                        w-full
-                        px-4
-                        py-2
-                        rounded-lg
-                        bg-blue-600
-                        hover:bg-blue-700
-                        transition
-                    "
-                >
-                    Connect
-                </button>
-
-            )}
-
-        </div>
-
-    </StatusCard>
-);
+        </DashboardStatusCard>
+    );
 }

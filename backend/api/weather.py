@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from Controllers.Weather_Controller import WeatherController
-
+from pydantic import BaseModel
 
 router = APIRouter(
     prefix='/api/weather',
@@ -10,6 +10,8 @@ router = APIRouter(
 
 controller: WeatherController | None = None
 
+class WeatherOverrideRequest(BaseModel):
+    mode: str
 
 def set_controller(weather_controller: WeatherController):
     global controller
@@ -47,9 +49,9 @@ def status():
 def connect():
     weather_controller = get_controller()
 
-    result = weather_controller.connect()
+    connected = weather_controller.connect()
 
-    if not result:
+    if not connected:
         raise HTTPException(
             status_code=503,
             detail='Unable to connect to weather station'
@@ -68,4 +70,33 @@ def disconnect():
 
     return {
         'success': True
+    }
+
+@router.post("/override")
+def set_weather_override(
+    request: WeatherOverrideRequest
+):
+
+    weather_controller = get_controller()
+
+    mode = request.mode.lower()
+
+    if mode == "auto":
+        weather_controller.set_safety_override(None)
+
+    elif mode == "safe":
+        weather_controller.set_safety_override(True)
+
+    elif mode == "unsafe":
+        weather_controller.set_safety_override(False)
+
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Override mode must be auto, safe, or unsafe"
+        )
+
+    return {
+        "success": True,
+        "mode": mode
     }

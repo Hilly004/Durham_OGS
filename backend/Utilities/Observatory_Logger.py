@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from datetime import datetime
+from threading import Lock
 import csv
+
 
 @dataclass
 class ObservatoryLogEntry:
@@ -12,11 +14,14 @@ class ObservatoryLogEntry:
     status: str
     slew_status: str
 
+
 @dataclass
 class ObservatoryMessageEntry:
     timestamp: datetime
     level: str
+    source: str
     message: str
+
 
 class ObservatoryLogger:
 
@@ -24,55 +29,126 @@ class ObservatoryLogger:
         self.entries = []
         self.messages = []
 
-    def log(self,info):
-        self.entries.append(
-            ObservatoryLogEntry(
-                timestamp=datetime.now(),
-                ra=info['ra'],
-                dec=info['dec'],
-                az=info['az'],
-                alt=info['alt'],
-                status=info['stat'],
-                slew_status=info['slew_stat']
-            )
-        )
+        self._lock = Lock()
 
-    def log_message(self, level, message):
-        self.messages.append(
-            ObservatoryMessageEntry(
-                timestamp=datetime.now(),
-                level=level,
-                message=message
+
+    def log(self, info):
+        with self._lock:
+            self.entries.append(
+                ObservatoryLogEntry(
+                    timestamp=datetime.now(),
+                    ra=info['ra'],
+                    dec=info['dec'],
+                    az=info['az'],
+                    alt=info['alt'],
+                    status=info['stat'],
+                    slew_status=info['slew_stat']
+                )
             )
-        )
+
+
+    def log_message(
+        self,
+        level: str,
+        message: str,
+        source: str = "SYSTEM"
+    ):
+        with self._lock:
+
+            self.messages.append(
+                ObservatoryMessageEntry(
+                    timestamp=datetime.now(),
+                    level=level,
+                    source=source.upper(),
+                    message=message
+                )
+            )
+
+            # Prevent the activity log growing forever
+            if len(self.messages) > 500:
+                self.messages = self.messages[-500:]
+
+
+    def get_messages(self, limit: int = 100):
+
+        with self._lock:
+            messages = self.messages[-limit:]
+
+            return list(messages)
+
+
+    def clear_messages(self):
+        with self._lock:
+            self.messages.clear()
+
 
     def clear(self):
-        self.entries.clear()
-
-    def info(self, message):
-        self.log_message('INFO', message)
+        with self._lock:
+            self.entries.clear()
 
 
-    def warning(self, message):
-        self.log_message('WARNING', message)
+    def info(
+        self,
+        message: str,
+        source: str = "SYSTEM"
+    ):
+        self.log_message(
+            "INFO",
+            message,
+            source
+        )
 
 
-    def error(self, message):
-        self.log_message('ERROR', message)
+    def success(
+        self,
+        message: str,
+        source: str = "SYSTEM"
+    ):
+        self.log_message(
+            "SUCCESS",
+            message,
+            source
+        )
 
-    def export_to_csv(self,filename):
-        with open(filename,'w',newline='') as f:
+
+    def warning(
+        self,
+        message: str,
+        source: str = "SYSTEM"
+    ):
+        self.log_message(
+            "WARNING",
+            message,
+            source
+        )
+
+
+    def error(
+        self,
+        message: str,
+        source: str = "SYSTEM"
+    ):
+        self.log_message(
+            "ERROR",
+            message,
+            source
+        )
+
+
+    def export_to_csv(self, filename):
+
+        with open(filename, 'w', newline='') as f:
             writer = csv.writer(f)
 
             writer.writerow([
-            "Timestamp",
-            "RA",
-            "DEC",
-            "AZ",
-            "ALT",
-            "Status",
-            "Slew Status"
-        ])
+                "Timestamp",
+                "RA",
+                "DEC",
+                "AZ",
+                "ALT",
+                "Status",
+                "Slew Status"
+            ])
 
             for entry in self.entries:
                 writer.writerow([
@@ -85,4 +161,4 @@ class ObservatoryLogger:
                     entry.slew_status
                 ])
 
-            print('Log exported to CSV')
+        print('Log exported to CSV')

@@ -1,4 +1,4 @@
-import StatusCard from "../Common/StatusCard";
+import StatusCard from "../Common/DashboardStatusCard";
 
 export default function CameraWidget() {
 

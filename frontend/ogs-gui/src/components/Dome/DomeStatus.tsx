@@ -1,14 +1,21 @@
-import { useEffect, useState } from "react";
+import {
+    useEffect,
+    useState,
+} from "react";
 
 import {
     getDomeStatus,
-    connectDome,
-    disconnectDome,
 } from "../../api/dome";
 
-import type { DomeStatusData } from "../../api/dome";
+import type {
+    DomeStatusData,
+} from "../../api/dome";
 
-import StatusCard from "../Common/StatusCard";
+import DashboardStatusCard
+    from "../Common/DashboardStatusCard";
+
+import DashboardStatusRow
+    from "../Common/DashboardStatusRow";
 
 
 export default function DomeStatusWidget() {
@@ -19,126 +26,123 @@ export default function DomeStatusWidget() {
 
     useEffect(() => {
 
-        const update = () => {
+        async function update() {
 
-            getDomeStatus()
-                .then(setStatus)
-                .catch(console.error);
+            try {
 
-        };
+                const domeStatus =
+                    await getDomeStatus();
+
+                setStatus(domeStatus);
+
+            } catch (error) {
+
+                console.error(
+                    "Unable to retrieve dome status:",
+                    error
+                );
+
+                setStatus(null);
+
+            }
+
+        }
+
 
         update();
 
-        const timer = setInterval(update, 100000);
+        const interval = setInterval(
+            update,
+            3000
+        );
 
-        return () => clearInterval(timer);
+
+        return () => {
+            clearInterval(interval);
+        };
 
     }, []);
 
 
-    async function handleConnect() {
-
-        try {
-            await connectDome();
-        } catch (error) {
-            console.error(error);
-        }
-
-    }
-
-
-    async function handleDisconnect() {
-
-        try {
-            await disconnectDome();
-        } catch (error) {
-            console.error(error);
-        }
-
-    }
-
-
-    if (!status) {
-
-        return (
-            <StatusCard
-                title="Dome"
-                status="error"
-            >
-
-                <p className="text-red-400">
-                    Unable to read dome status
-                </p>
-
-                <button
-                    onClick={handleConnect}
-                    className="
-                        mt-4
-                        w-full
-                        px-4
-                        py-2
-                        rounded-lg
-                        bg-blue-600
-                        hover:bg-blue-700
-                        transition
-                    "
-                >
-                    Connect
-                </button>
-
-            </StatusCard>
-        );
-    }
+    const domeState =
+        !status?.connected
+            ? "--"
+            : status.fault
+                ? "Fault"
+                : status.moving
+                    ? "Moving"
+                    : status.isOpen
+                        ? "Open"
+                        : "Closed";
 
 
     return (
-    <StatusCard
-        title="Dome"
-        status={
-            status.connected
-                ? "connected"
-                : "disconnected"
-        }
-    >
-
-        <div className="text-2xl font-semibold">
-            {status.moving ? 
-                'Moving'
-                : status.isOpen ?
-                'Open':'Closed'}
-        </div>
-
-        {status.fault && (
-            <p className="mt-2 text-red-400">
-                Dome fault detected
-            </p>
-        )}
-        {/* Connection button */}
-
-        <button
-            onClick={
-                status.connected
-                    ? handleDisconnect
-                    : handleConnect
+        <DashboardStatusCard
+            title="Dome"
+            connected={
+                status?.connected ?? false
             }
-
-            className="
-                w-full
-                mt-6
-                px-4
-                py-2
-                rounded-lg
-                bg-slate-700
-                hover:bg-slate-600
-                text-white
-                transition
-            "
         >
-            {status.connected
-                ? "Disconnect"
-                : "Connect"}
-        </button>
 
-    </StatusCard>
-);
+            <div className="space-y-1">
+
+                <DashboardStatusRow
+                    label="State"
+                    value={domeState}
+                    valueClassName={
+                        status?.fault
+                            ? "text-red-400"
+                            : status?.moving
+                                ? "text-amber-400"
+                                : "text-slate-300"
+                    }
+                />
+
+                <DashboardStatusRow
+                    label="Open"
+                    value={
+                        status?.connected
+                            ? status.isOpen
+                                ? "Yes"
+                                : "No"
+                            : "--"
+                    }
+                />
+
+                <DashboardStatusRow
+                    label="Moving"
+                    value={
+                        status?.connected
+                            ? status.moving
+                                ? "Yes"
+                                : "No"
+                            : "--"
+                    }
+                    valueClassName={
+                        status?.moving
+                            ? "text-amber-400"
+                            : "text-slate-300"
+                    }
+                />
+
+                <DashboardStatusRow
+                    label="Fault"
+                    value={
+                        status?.connected
+                            ? status.fault
+                                ? "Detected"
+                                : "None"
+                            : "--"
+                    }
+                    valueClassName={
+                        status?.fault
+                            ? "text-red-400"
+                            : "text-slate-300"
+                    }
+                />
+
+            </div>
+
+        </DashboardStatusCard>
+    );
 }

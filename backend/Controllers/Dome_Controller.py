@@ -1,20 +1,49 @@
-from Utilities.Observatory_Logger import ObservatoryLogger
-
 class DomeController:
 
-    def __init__(self,dome):
+    def __init__(self,dome,logger):
         self.dome = dome
-        self.logger = ObservatoryLogger()
+        self.logger = logger
 
     def connect(self):
         try:
-            self.dome.connect()
+            connected = self.dome.connect()
+
+            if not connected:
+                self.logger.error(
+                f'Dome connection failed',
+                              source='DOME')
+                return False
+            
+            self.logger.success(
+                'Dome connected',
+                source='DOME'
+            )
+            return True
+        
         except Exception as e:
-            self.logger.error(f'Dome connection failed: {e}')
+            self.logger.error(
+                f'Dome connection failed: {e}',
+                              source='DOME')
             return False
+            
 
     def disconnect(self):
-        return self.dome.disconnect()
+        try:
+            self.dome.disconnect()
+
+            self.logger.info(
+                'Dome disconnected',
+                source='DOME'
+            )
+
+            return True
+
+        except Exception as e:
+            self.logger.error(
+                f'Dome disconnect failed: {e}',
+                source='DOME'
+            )
+            return False
 
     @property
     def is_connected(self):
@@ -31,7 +60,7 @@ class DomeController:
     def get_status(self):
         return {
             'connected': self.is_connected,
-            'open': self.is_open,
+            'isOpen': self.is_open,
             'moving': self.is_moving,
             'fault': self.has_fault
         }

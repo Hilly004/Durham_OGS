@@ -65,3 +65,114 @@ class SatelliteService:
         self.repository.delete_satellite(satellite)
 
         return True
+    
+    def predict_pass(self, satellite_id: int, jd: float, minutes: int):
+        satellite = self.repository.get_by_id(satellite_id)
+
+        if satellite is None:
+            return None
+
+        tle_data = (
+            satellite.tle_line1
+            + "\n"
+            + satellite.tle_line2
+            + "\n"
+        )
+        print("TLE DATA repr:", repr(tle_data))
+        load_result = self.mount.write_storage(tle_data)
+
+        if load_result != "V#":
+            raise RuntimeError(
+                f"Mount rejected TLE: {load_result}"
+            )
+
+        result = self.mount.precalculate_satellite_transit(
+            jd,
+            minutes
+        )
+
+        if result == "E#":
+            raise RuntimeError(
+                "Mount could not calculate satellite transit"
+            )
+
+        if result == "N#":
+            return {
+                "found": False,
+                "start_jd": None,
+                "end_jd": None,
+                "flags": None
+            }
+
+        clean_result = result.rstrip("#")
+        parts = clean_result.split(",")
+
+        if len(parts) != 3:
+            raise RuntimeError(
+                f"Unexpected transit response from mount: {result}"
+            )
+
+        return {
+            "found": True,
+            "start_jd": float(parts[0]),
+            "end_jd": float(parts[1]),
+            "flags": parts[2]
+        }
+    
+    def slew_to_satellite(self):
+        result = self.mount.slew_to_satellite_transit()
+
+        if result == "V#":
+            return {
+                "status": "slewing",
+                "message": "Slewing to satellite transit start"
+            }
+
+        if result == "S#":
+            return {
+                "status": "catching",
+                "message": "Transit already started; catching satellite"
+            }
+
+        if result == "F#":
+            raise RuntimeError(
+                "Mount failed to slew to satellite"
+            )
+
+        if result == "E#":
+            raise RuntimeError(
+                "No satellite transit has been precalculated"
+            )
+
+        if result == "Q#":
+            raise RuntimeError(
+                "Satellite transit has already ended"
+            )
+
+        raise RuntimeError(
+            f"Unexpected satellite slew response: {result}"
+        )
+    
+    def get_tracking_status(self):
+        result = self.mount.get_satellite_slew_status()
+
+        status_map = {
+            "V#": "slewing",
+            "P#": "waiting",
+            "S#": "catching",
+            "T#": "tracking",
+            "Q#": "ended",
+            "E#": "idle",
+        }
+
+        status = status_map.get(result)
+
+        if status is None:
+            raise RuntimeError(
+                f"Unexpected satellite tracking status: {result}"
+            )
+
+        return {
+            "status": status,
+            "tracking": result == "T#"
+        }

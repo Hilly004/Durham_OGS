@@ -12,7 +12,7 @@ class WeatherMonitor:
         return True
 
     def disconnect(self):
-        self.conencted = False
+        self.connected = False
         return True
     
     def is_connected(self):

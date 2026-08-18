@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import {
+    useEffect,
+    useState,
+} from "react";
 
 import {
     getMountStatus,
     getMountPosition,
     getMountPosition_rd,
-    connectMount,
-    disconnectMount,
 } from "../../api/mount";
 
 import type {
@@ -14,7 +15,16 @@ import type {
     MountPosition_rd,
 } from "../../api/mount";
 
-import StatusCard from "../Common/StatusCard";
+import DashboardStatusCard
+    from "../Common/DashboardStatusCard";
+
+import DashboardStatusRow
+    from "../Common/DashboardStatusRow";
+
+
+type CoordinateMode =
+    | "altaz"
+    | "radec";
 
 
 export default function MountStatusWidget() {
@@ -25,17 +35,16 @@ export default function MountStatusWidget() {
     const [position, setPosition] =
         useState<MountPosition | null>(null);
 
-    const [position_rd, setPosition_rd] =
+    const [positionRd, setPositionRd] =
         useState<MountPosition_rd | null>(null);
 
+    const [mode, setMode] =
+        useState<CoordinateMode>("altaz");
 
-    // --------------------------------------------------
-    // Update mount information
-    // --------------------------------------------------
 
     useEffect(() => {
 
-        const update = async () => {
+        async function update() {
 
             try {
 
@@ -45,263 +54,188 @@ export default function MountStatusWidget() {
                 setStatus(mountStatus);
 
 
-                if (mountStatus.connected) {
-
-                    const mountPosition =
-                        await getMountPosition();
-
-                    setPosition(mountPosition);
-
-
-                    const mountPosition_rd =
-                        await getMountPosition_rd();
-
-                    setPosition_rd(mountPosition_rd);
-
-                } else {
+                if (!mountStatus.connected) {
 
                     setPosition(null);
-                    setPosition_rd(null);
+                    setPositionRd(null);
 
+                    return;
                 }
+
+
+                const [
+                    altAz,
+                    raDec,
+                ] = await Promise.all([
+                    getMountPosition(),
+                    getMountPosition_rd(),
+                ]);
+
+
+                setPosition(altAz);
+                setPositionRd(raDec);
 
             } catch (error) {
 
-                console.error(error);
+                console.error(
+                    "Unable to retrieve mount status:",
+                    error
+                );
 
                 setStatus(null);
                 setPosition(null);
-                setPosition_rd(null);
+                setPositionRd(null);
 
             }
 
-        };
+        }
 
 
         update();
 
-        const timer =
-            setInterval(update, 100000);
+        const interval = setInterval(
+            update,
+            3000
+        );
 
-        return () =>
-            clearInterval(timer);
+
+        return () => {
+            clearInterval(interval);
+        };
 
     }, []);
 
 
-    // --------------------------------------------------
-    // Connect
-    // --------------------------------------------------
-
-    async function handleConnect() {
-    try {
-        await connectMount();
-
-        const mountStatus = await getMountStatus();
-        setStatus(mountStatus);
-
-    } catch (error) {
-        console.error(error);
-    }
-    }
-
-
-    // --------------------------------------------------
-    // Disconnect
-    // --------------------------------------------------
-
-    async function handleDisconnect() {
-    try {
-        await disconnectMount();
-
-        const mountStatus = await getMountStatus();
-        setStatus(mountStatus);
-
-        setPosition(null);
-        setPosition_rd(null);
-
-    } catch (error) {
-        console.error(error);
-    }
-    }
-
-
-    // --------------------------------------------------
-    // No status
-    // --------------------------------------------------
-
-    if (!status) {
-
-        return (
-            <StatusCard
-                title="Mount"
-                status="error"
-            >
-
-                <p className="text-red-400">
-                    Unable to read mount status
-                </p>
-
-                <button
-                    onClick={handleConnect}
-                    className="
-                        mt-4
-                        w-full
-                        px-4
-                        py-2
-                        rounded-lg
-                        bg-blue-600
-                        hover:bg-blue-700
-                        transition
-                    "
-                >
-                    Connect
-                </button>
-
-            </StatusCard>
-        );
-    }
-
-
-    // --------------------------------------------------
-    // Mount card
-    // --------------------------------------------------
-
     return (
-
-        <StatusCard
+        <DashboardStatusCard
             title="Mount"
-            status={
-                status.connected
-                    ? "connected"
-                    : "disconnected"
+            connected={
+                status?.connected ?? false
             }
         >
 
-            {/* Alt/Az */}
+            <div className="flex h-full flex-col">
 
-            <div className="
-                grid
-                grid-cols-2
-                gap-4
-            ">
+                {/* Coordinate Toggle */}
+                <div
+                    className="
+                        mb-3
+                        grid
+                        grid-cols-2
+                        rounded-lg
+                        bg-slate-950/60
+                        p-1
+                    "
+                >
 
-                <div>
+                    <button
+                        type="button"
+                        onClick={() =>
+                            setMode("altaz")
+                        }
+                        className={`
+                            rounded-md
+                            px-2
+                            py-1.5
+                            text-xs
+                            font-medium
+                            transition
 
-                    <p className="
-                        text-slate-400
-                        text-sm
-                    ">
-                        Altitude
-                    </p>
+                            ${
+                                mode === "altaz"
+                                    ? "bg-violet-500/15 text-violet-300"
+                                    : "text-slate-500 hover:text-slate-300"
+                            }
+                        `}
+                    >
+                        Alt / Az
+                    </button>
 
-                    <p className="
-                        text-xl
-                        font-semibold
-                    ">
-                        {position?.alt ?? "--"}°
-                    </p>
+
+                    <button
+                        type="button"
+                        onClick={() =>
+                            setMode("radec")
+                        }
+                        className={`
+                            rounded-md
+                            px-2
+                            py-1.5
+                            text-xs
+                            font-medium
+                            transition
+
+                            ${
+                                mode === "radec"
+                                    ? "bg-violet-500/15 text-violet-300"
+                                    : "text-slate-500 hover:text-slate-300"
+                            }
+                        `}
+                    >
+                        RA / DEC
+                    </button>
 
                 </div>
 
 
-                <div>
+                {/* Coordinate Values */}
+                <div className="space-y-1">
 
-                    <p className="
-                        text-slate-400
-                        text-sm
-                    ">
-                        Azimuth
-                    </p>
+                    {mode === "altaz" ? (
+                        <>
+                            <DashboardStatusRow
+                                label="Altitude"
+                                value={
+                                    position
+                                        ? `${formatNumber(position.alt)}°`
+                                        : "--"
+                                }
+                            />
 
-                    <p className="
-                        text-xl
-                        font-semibold
-                    ">
-                        {position?.az ?? "--"}°
-                    </p>
+                            <DashboardStatusRow
+                                label="Azimuth"
+                                value={
+                                    position
+                                        ? `${formatNumber(position.az)}°`
+                                        : "--"
+                                }
+                            />
+                        </>
+                    ) : (
+                        <>
+                            <DashboardStatusRow
+                                label="RA"
+                                value={
+                                    positionRd
+                                        ? formatNumber(positionRd.ra)
+                                        : "--"
+                                }
+                            />
+
+                            <DashboardStatusRow
+                                label="DEC"
+                                value={
+                                    positionRd
+                                        ? `${formatNumber(positionRd.dec)}°`
+                                        : "--"
+                                }
+                            />
+                        </>
+                    )}
 
                 </div>
 
             </div>
 
-
-            {/* RA/Dec */}
-
-            <div className="
-                grid
-                grid-cols-2
-                gap-4
-                mt-4
-            ">
-
-                <div>
-
-                    <p className="
-                        text-slate-400
-                        text-sm
-                    ">
-                        Right Ascension
-                    </p>
-
-                    <p className="
-                        text-xl
-                        font-semibold
-                    ">
-                        {position_rd?.ra ?? "--"}
-                    </p>
-
-                </div>
-
-
-                <div>
-
-                    <p className="
-                        text-slate-400
-                        text-sm
-                    ">
-                        Declination
-                    </p>
-
-                    <p className="
-                        text-xl
-                        font-semibold
-                    ">
-                        {position_rd?.dec ?? "--"}°
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            {/* Connection */}
-
-            <button
-                onClick={
-                    status.connected
-                        ? handleDisconnect
-                        : handleConnect
-                }
-                className="
-                    w-full
-                    mt-6
-                    px-4
-                    py-2
-                    rounded-lg
-                    bg-slate-700
-                    hover:bg-slate-600
-                    text-white
-                    transition
-                "
-            >
-
-                {status.connected
-                    ? "Disconnect"
-                    : "Connect"}
-
-            </button>
-
-        </StatusCard>
+        </DashboardStatusCard>
     );
+}
+
+
+function formatNumber(
+    value: number
+) {
+    return Number.isFinite(value)
+        ? value.toFixed(2)
+        : "--";
 }

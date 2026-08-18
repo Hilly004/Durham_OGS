@@ -66,7 +66,11 @@ def disconnect():
 @router.get("/status")
 def status():
     dome_controller = get_controller()
-    return dome_controller.get_status()
+
+    return {
+        'success': True,
+        'data': dome_controller.get_status()
+    }
 
 @router.post('/open')
 def open_dome():
@@ -154,7 +158,7 @@ def open_two():
     observatory = get_observatory_controller()
 
     try:
-        result = observatory.close_right()
+        result = observatory.open_right()
 
     except ConnectionError:
         raise HTTPException(

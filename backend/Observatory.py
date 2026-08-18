@@ -1,11 +1,10 @@
 from Controllers.safety_manager import SafetyManager
-from Utilities.Observatory_Logger import ObservatoryLogger
 import time
 import threading
 
 class ObservatoryController:
 
-    def __init__(self, dome, mount, weather):
+    def __init__(self, dome, mount, weather,logger):
         self.dome = dome
         self.mount = mount
         self.weather = weather
@@ -18,7 +17,7 @@ class ObservatoryController:
 
         self.running = False
         self.monitor_thread = None
-        self.logger = ObservatoryLogger()
+        self.logger = logger
 
         self.shutdown_in_progress = False
         self.unsafe_shutdown_triggered = False
@@ -66,7 +65,8 @@ class ObservatoryController:
                             self.shutdown_in_progress = False
 
             except Exception as e:
-                self.logger.error(f'Monitoring error: {e}')
+                self.logger.error(f'Monitoring error: {e}',
+                                  source='SYSTEM')
 
             time.sleep(10)    #change number eventually
 
@@ -79,7 +79,8 @@ class ObservatoryController:
 
     def open_dome(self):
         if not self.safety.is_safe():
-            self.logger.warning('Dome opening prevented')
+            self.logger.warning('Dome opening prevented',
+                                source='DOME')
             return False
 
         return self.dome.open_dome()
@@ -87,7 +88,8 @@ class ObservatoryController:
 
     def open_left(self):
         if not self.safety.is_safe():
-            self.logger.warning('Left dome opening prevented')
+            self.logger.warning('Left dome opening prevented',
+                                source='DOME')
             return False
 
         return self.dome.open_left()
@@ -95,7 +97,8 @@ class ObservatoryController:
 
     def open_right(self):
         if not self.safety.is_safe():
-            self.logger.warning('Right dome opening prevented')
+            self.logger.warning('Right dome opening prevented',
+                                source='DOME')
             return False
 
         return self.dome.open_right()
@@ -127,21 +130,24 @@ class ObservatoryController:
 
     def unpark_mount(self):
         if not self.safety.can_unpark_mount():
-            self.logger.warning('Mount unpark prevented')
+            self.logger.warning('Mount unpark prevented',
+                                source='MOUNT')
             return False
 
         return self.mount.unpark()
     
     def slew_mount(self, ra: float, dec: float):
         if not self.safety.can_start_observing():
-            self.logger.warning('Mount slew prevented')
+            self.logger.warning('Mount slew prevented',
+                                source='MOUNT')
             return False
 
         return self.mount.slew_to_ra_dec(ra, dec)
     
     def start_tracking(self):
         if not self.safety.can_start_observing():
-            self.logger.warning('Mount tracking start prevented')
+            self.logger.warning('Mount tracking start prevented',
+                                source='MOUNT')
             return False
 
         return self.mount.start_tracking()

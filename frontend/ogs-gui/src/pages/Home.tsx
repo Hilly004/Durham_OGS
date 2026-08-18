@@ -1,169 +1,395 @@
-import { useEffect, useState } from "react";
+import {
+    useEffect,
+    useState,
+} from "react";
 
-import MountStatusWidget from "../components/Mount/MountStatus";
-import DomeStatusWidget from "../components/Dome/DomeStatus";
-import WeatherStatusWidget from "../components/Weather/WeatherStatus";
-import CameraWidget from "../components/Camera/CameraWidget";
-import ActivityLog from "../components/Activity/ActivityWidget";
+import MountStatusWidget
+    from "../components/Mount/MountStatus";
 
-import { getObservatorySafety } from "../api/observatory";
+import DomeStatusWidget
+    from "../components/Dome/DomeStatus";
+
+import WeatherStatusWidget
+    from "../components/Weather/WeatherStatus";
+
+import CameraWidget
+    from "../components/Camera/CameraWidget";
+
+import {
+    useObservatoryStatus,
+} from "../context/ObservatoryStatusContext";
+
+import {
+    getObservatoryStateStyle,
+} from "../utils/observatoryStatus";
 
 
 export default function Home() {
 
-    const [safetyStatus, setSafetyStatus] =
-        useState<{
-            safe: boolean 
-            reason: string | null;
-        } | null>(null);
+    const [time, setTime] =
+        useState(new Date());
 
+    const {
+        observatoryState,
+    } = useObservatoryStatus();
 
-    useEffect(() => {
-
-        async function updateSafety() {
-            try {
-                const data = await getObservatorySafety();
-
-                setSafetyStatus(data);
-
-            } catch (error) {
-
-                console.error(
-                    "Failed to fetch observatory safety:",
-                    error
-                );
-
-                setSafetyStatus(null);
-            }
-        }
-
-
-        updateSafety();
-
-
-        const timer = setInterval(
-            updateSafety,
-            5000
+    const observatoryStyle =
+        getObservatoryStateStyle(
+            observatoryState
         );
 
 
-        return () => clearInterval(timer);
+    /*
+     * Dashboard clock
+     */
+    useEffect(() => {
+
+        const interval = setInterval(
+            () => {
+                setTime(new Date());
+            },
+            1000
+        );
+
+        return () => {
+            clearInterval(interval);
+        };
 
     }, []);
 
 
     return (
-        <div className="w-full h-full">
+        <div
+            className="
+                flex
+                h-full
+                w-full
+                flex-col
+                gap-3
+                overflow-hidden
+                p-4
+            "
+        >
 
+            {/* Observatory Status Bar */}
             <div
                 className="
-                    grid
-                    grid-cols-4
-                    grid-rows-[auto_1fr]
-                    gap-4
-                    h-full
+                    flex
+                    shrink-0
+                    items-center
+                    justify-between
+                    rounded-xl
+                    border
+                    border-slate-800
+                    bg-slate-900
+                    px-5
+                    py-3
                 "
             >
 
-                {/* ------------------------------------------------ */}
-                {/* Observatory Safety */}
-                {/* ------------------------------------------------ */}
-
+                {/* Left */}
                 <div
                     className="
-                        col-span-4
-                        bg-slate-900
-                        border
-                        border-slate-800
-                        rounded-xl
-                        px-5
-                        py-3
                         flex
                         items-center
-                        justify-between
+                        gap-4
                     "
                 >
 
-                    <div>
-                        <h1 className="text-xl font-semibold">
-                            Optical Ground Station
-                        </h1>
+                    <h1
+                        className="
+                            text-lg
+                            font-semibold
+                            text-slate-100
+                        "
+                    >
+                        Observatory
+                    </h1>
 
-                        <p className="text-sm text-slate-400">
-                            Durham Observatory
-                        </p>
+
+                    <div
+                        className="
+                            h-5
+                            w-px
+                            bg-slate-700
+                        "
+                    />
+
+
+                    {/* Overall Observatory State */}
+                    <div
+                        className="
+                            flex
+                            items-center
+                            gap-2
+                        "
+                    >
+
+                        <span
+                            className={`
+                                h-2.5
+                                w-2.5
+                                rounded-full
+                                ${observatoryStyle.dot}
+                            `}
+                        />
+
+                        <span
+                            className={`
+                                text-sm
+                                font-medium
+                                ${observatoryStyle.text}
+                            `}
+                        >
+                            {observatoryStyle.label}
+                        </span>
+
                     </div>
 
+                </div>
 
-                    <div className="text-right">
 
-                        <p className="text-xs text-slate-400">
-                            Observatory Status
-                        </p>
+                {/* Right */}
+                <div
+                    className="
+                        flex
+                        items-center
+                        gap-6
+                    "
+                >
+
+                    <span
+                        className="
+                            text-sm
+                            text-slate-500
+                        "
+                    >
+                        Durham Optical Ground Station
+                    </span>
+
+
+                    <span
+                        className="
+                            font-mono
+                            text-sm
+                            text-slate-300
+                        "
+                    >
+                        {time.toLocaleTimeString(
+                            [],
+                            {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                second: "2-digit",
+                                hour12: false,
+                            }
+                        )}
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            {/* Dashboard */}
+            <div
+                className="
+                    grid
+                    min-h-0
+                    flex-1
+                    grid-cols-12
+                    grid-rows-[210px_minmax(0,1fr)]
+                    gap-3
+                "
+            >
+
+                {/* Mount */}
+                <div
+                    className="
+                        col-span-4
+                        min-h-0
+                        overflow-hidden
+                    "
+                >
+                    <MountStatusWidget />
+                </div>
+
+
+                {/* Dome */}
+                <div
+                    className="
+                        col-span-4
+                        min-h-0
+                        overflow-hidden
+                    "
+                >
+                    <DomeStatusWidget />
+                </div>
+
+
+                {/* Weather */}
+                <div
+                    className="
+                        col-span-4
+                        min-h-0
+                        overflow-hidden
+                    "
+                >
+                    <WeatherStatusWidget />
+                </div>
+
+
+                {/* Camera */}
+                <div
+                    className="
+                        col-span-8
+                        min-h-0
+                        overflow-hidden
+                    "
+                >
+                    <CameraWidget />
+                </div>
+
+
+                {/* Target Tracking */}
+                <div
+                    className="
+                        col-span-4
+                        min-h-0
+                        overflow-hidden
+                        rounded-xl
+                        border
+                        border-slate-800
+                        bg-slate-900
+                    "
+                >
+
+                    {/* Header */}
+                    <div
+                        className="
+                            flex
+                            items-center
+                            justify-between
+                            border-b
+                            border-slate-800
+                            px-4
+                            py-3
+                        "
+                    >
+
+                        <h2
+                            className="
+                                text-sm
+                                font-semibold
+                                text-slate-100
+                            "
+                        >
+                            Target Tracking
+                        </h2>
+
 
                         <div
-                            className={
-                                safetyStatus === null
-                                    ? "font-semibold text-slate-400"
-                                    : safetyStatus.safe
-                                        ? "font-semibold text-green-400"
-                                        : "font-semibold text-red-400"
-                            }
+                            className="
+                                flex
+                                items-center
+                                gap-2
+                            "
                         >
-                            {safetyStatus === null
-                                ? "Safety status unavailable"
-                                : safetyStatus.safe
-                                    ? "Observatory Safe"
-                                    : "Observatory Unsafe"}
 
+                            <span
+                                className="
+                                    h-2
+                                    w-2
+                                    rounded-full
+                                    bg-slate-600
+                                "
+                            />
 
-                            {safetyStatus !== null &&
-                                !safetyStatus.safe &&
-                                safetyStatus.reason && (
-                                    <p className="text-xs text-slate-400 mt-1">
-                                        {safetyStatus.reason}
-                                    </p>
-                                )}
+                            <span
+                                className="
+                                    text-xs
+                                    text-slate-500
+                                "
+                            >
+                                Idle
+                            </span>
+
                         </div>
 
                     </div>
 
-                </div>
 
+                    {/* Content */}
+                    <div
+                        className="
+                            space-y-1
+                            p-4
+                        "
+                    >
 
-                {/* ------------------------------------------------ */}
-                {/* Left column */}
-                {/* ------------------------------------------------ */}
+                        <DashboardRow
+                            label="Target"
+                            value="None selected"
+                        />
 
-                <div className="col-span-1 flex flex-col gap-4">
+                        <DashboardRow
+                            label="Tracking"
+                            value="Inactive"
+                        />
 
-                    <MountStatusWidget />
+                        <DashboardRow
+                            label="Next Pass"
+                            value="--"
+                        />
 
-                    <DomeStatusWidget />
-
-                    <WeatherStatusWidget />
-
-                </div>
-
-
-                {/* ------------------------------------------------ */}
-                {/* Camera + Activity */}
-                {/* ------------------------------------------------ */}
-
-                <div className="col-span-3 flex flex-col gap-4 min-h-0">
-
-                    <div className="flex-[3] min-h-0">
-                        <CameraWidget />
-                    </div>
-
-
-                    <div className="flex-[1] min-h-0">
-                        <ActivityLog />
                     </div>
 
                 </div>
 
             </div>
+
+        </div>
+    );
+}
+
+
+function DashboardRow({
+    label,
+    value,
+}: {
+    label: string;
+    value: string;
+}) {
+
+    return (
+        <div
+            className="
+                flex
+                items-center
+                justify-between
+                py-1.5
+            "
+        >
+
+            <span
+                className="
+                    text-sm
+                    text-slate-500
+                "
+            >
+                {label}
+            </span>
+
+
+            <span
+                className="
+                    text-sm
+                    font-medium
+                    text-slate-300
+                "
+            >
+                {value}
+            </span>
 
         </div>
     );
