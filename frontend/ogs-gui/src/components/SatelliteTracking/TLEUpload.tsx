@@ -1,21 +1,39 @@
-import { useState } from "react";
-import { Save, Satellite,X } from "lucide-react";
+import {
+    useState,
+    type FormEvent,
+} from "react";
 
-import { createSatellite } from "../../api/satellite";
+import {
+    Save,
+    Satellite,
+    X,
+} from "lucide-react";
+
+import {
+    createSatellite,
+} from "../../api/satellite";
+
 
 interface TLEUploadProps {
     onClose: () => void;
 }
 
+
 export default function TLEUpload({
-        onClose,
-    }: TLEUploadProps) {
+    onClose,
+}: TLEUploadProps) {
 
-    const [name, setName] = useState("");
-    const [line1, setLine1] = useState("");
-    const [line2, setLine2] = useState("");
+    const [name, setName] =
+        useState("");
 
-    const [loading, setLoading] = useState(false);
+    const [line1, setLine1] =
+        useState("");
+
+    const [line2, setLine2] =
+        useState("");
+
+    const [loading, setLoading] =
+        useState(false);
 
     const [message, setMessage] =
         useState<string | null>(null);
@@ -25,7 +43,7 @@ export default function TLEUpload({
 
 
     async function handleSubmit(
-        event: React.FormEvent
+        event: FormEvent
     ) {
 
         event.preventDefault();
@@ -34,57 +52,115 @@ export default function TLEUpload({
         setError(null);
 
 
-        if (!name.trim()) {
-            setError("Satellite name is required.");
+        const cleanName =
+            name.trim();
+
+        const cleanLine1 =
+            line1.trim();
+
+        const cleanLine2 =
+            line2.trim();
+
+
+        if (!cleanName) {
+
+            setError(
+                "Satellite name is required."
+            );
+
             return;
         }
 
-        if (!line1.trim() || !line2.trim()) {
-            setError("Both TLE lines are required.");
+
+        if (
+            !cleanLine1 ||
+            !cleanLine2
+        ) {
+
+            setError(
+                "Both TLE lines are required."
+            );
+
             return;
         }
 
 
-        if (!line1.trim().startsWith("1 ")) {
-            setError("TLE line 1 must begin with '1 '.");
+        if (
+            !cleanLine1.startsWith(
+                "1 "
+            )
+        ) {
+
+            setError(
+                "TLE line 1 must begin with '1 '."
+            );
+
             return;
         }
 
-        if (!line2.trim().startsWith("2 ")) {
-            setError("TLE line 2 must begin with '2 '.");
+
+        if (
+            !cleanLine2.startsWith(
+                "2 "
+            )
+        ) {
+
+            setError(
+                "TLE line 2 must begin with '2 '."
+            );
+
             return;
         }
 
 
         setLoading(true);
 
+
         try {
 
-            await createSatellite({
-                name: name.trim(),
-                line1: line1.trim(),
-                line2: line2.trim(),
-            });
+            const satellite =
+                await createSatellite({
+                    name:
+                        cleanName,
+
+                    tle_line1:
+                        cleanLine1,
+
+                    tle_line2:
+                        cleanLine2,
+                });
+
 
             setMessage(
-                `${name.trim()} saved successfully.`
+                `${satellite.name} saved successfully.`
             );
+
 
             setName("");
             setLine1("");
             setLine2("");
 
+
         } catch (error) {
 
-            if (error instanceof Error) {
-                setError(error.message);
+            if (
+                error instanceof Error
+            ) {
+
+                setError(
+                    error.message
+                );
+
             } else {
+
                 setError(
                     "Unable to save satellite."
                 );
             }
 
+
         } finally {
+
             setLoading(false);
         }
     }
@@ -94,16 +170,30 @@ export default function TLEUpload({
         <div
             className="
                 rounded-xl
-                border border-slate-800
+                border
+                border-slate-800
                 bg-slate-900
                 p-5
             "
         >
 
             {/* Header */}
-            <div className="mb-5 flex items-center justify-between">
+            <div
+                className="
+                    mb-5
+                    flex
+                    items-center
+                    justify-between
+                "
+            >
 
-                <div className="flex items-center gap-3">
+                <div
+                    className="
+                        flex
+                        items-center
+                        gap-3
+                    "
+                >
 
                     <div
                         className="
@@ -116,20 +206,38 @@ export default function TLEUpload({
                             bg-violet-500/10
                         "
                     >
+
                         <Satellite
                             size={18}
-                            className="text-violet-400"
+                            className="
+                                text-violet-400
+                            "
                         />
+
                     </div>
 
+
                     <div>
-                        <h2 className="font-semibold text-slate-100">
+
+                        <h2
+                            className="
+                                font-semibold
+                                text-slate-100
+                            "
+                        >
                             Add Satellite TLE
                         </h2>
 
-                        <p className="text-xs text-slate-500">
-                            Store orbital elements for future tracking
+                        <p
+                            className="
+                                text-xs
+                                text-slate-500
+                            "
+                        >
+                            Store orbital elements
+                            for future tracking
                         </p>
+
                     </div>
 
                 </div>
@@ -147,7 +255,9 @@ export default function TLEUpload({
                         hover:text-slate-200
                     "
                 >
+
                     <X size={18} />
+
                 </button>
 
             </div>
@@ -175,19 +285,27 @@ export default function TLEUpload({
                         Satellite Name
                     </label>
 
+
                     <input
                         type="text"
                         value={name}
                         onChange={(event) =>
-                            setName(event.target.value)
+                            setName(
+                                event.target.value
+                            )
                         }
-                        placeholder="e.g. ISS (ZARYA)"
+                        placeholder="
+                            e.g. ISS (ZARYA)
+                        "
+                        disabled={loading}
                         className="
                             w-full
                             rounded-lg
-                            border border-slate-700
+                            border
+                            border-slate-700
                             bg-slate-950
-                            px-3 py-2
+                            px-3
+                            py-2
                             text-sm
                             text-slate-200
                             outline-none
@@ -196,6 +314,7 @@ export default function TLEUpload({
                             focus:border-violet-500
                             focus:ring-2
                             focus:ring-violet-500/20
+                            disabled:opacity-50
                         "
                     />
 
@@ -219,19 +338,29 @@ export default function TLEUpload({
                         TLE Line 1
                     </label>
 
+
                     <input
                         type="text"
                         value={line1}
                         onChange={(event) =>
-                            setLine1(event.target.value)
+                            setLine1(
+                                event.target.value
+                            )
                         }
-                        placeholder="1 25544U 98067A ..."
+                        placeholder="
+                            1 25544U 98067A ...
+                        "
+                        disabled={loading}
+                        autoComplete="off"
+                        spellCheck={false}
                         className="
                             w-full
                             rounded-lg
-                            border border-slate-700
+                            border
+                            border-slate-700
                             bg-slate-950
-                            px-3 py-2
+                            px-3
+                            py-2
                             font-mono
                             text-sm
                             text-slate-200
@@ -241,6 +370,7 @@ export default function TLEUpload({
                             focus:border-violet-500
                             focus:ring-2
                             focus:ring-violet-500/20
+                            disabled:opacity-50
                         "
                     />
 
@@ -264,19 +394,29 @@ export default function TLEUpload({
                         TLE Line 2
                     </label>
 
+
                     <input
                         type="text"
                         value={line2}
                         onChange={(event) =>
-                            setLine2(event.target.value)
+                            setLine2(
+                                event.target.value
+                            )
                         }
-                        placeholder="2 25544 51.6400 ..."
+                        placeholder="
+                            2 25544 51.6400 ...
+                        "
+                        disabled={loading}
+                        autoComplete="off"
+                        spellCheck={false}
                         className="
                             w-full
                             rounded-lg
-                            border border-slate-700
+                            border
+                            border-slate-700
                             bg-slate-950
-                            px-3 py-2
+                            px-3
+                            py-2
                             font-mono
                             text-sm
                             text-slate-200
@@ -286,27 +426,51 @@ export default function TLEUpload({
                             focus:border-violet-500
                             focus:ring-2
                             focus:ring-violet-500/20
+                            disabled:opacity-50
                         "
                     />
 
                 </div>
 
 
-                {/* Bottom Row */}
-                <div className="flex items-center justify-between pt-1">
+                {/* Result + Submit */}
+                <div
+                    className="
+                        flex
+                        items-center
+                        justify-between
+                        gap-4
+                        pt-1
+                    "
+                >
 
-                    <div>
+                    <div className="min-w-0">
 
                         {error && (
-                            <p className="text-sm text-red-400">
+
+                            <p
+                                className="
+                                    text-sm
+                                    text-red-400
+                                "
+                            >
                                 {error}
                             </p>
+
                         )}
 
+
                         {message && (
-                            <p className="text-sm text-green-400">
+
+                            <p
+                                className="
+                                    text-sm
+                                    text-green-400
+                                "
+                            >
                                 {message}
                             </p>
+
                         )}
 
                     </div>
@@ -317,11 +481,13 @@ export default function TLEUpload({
                         disabled={loading}
                         className="
                             flex
+                            shrink-0
                             items-center
                             gap-2
                             rounded-lg
                             bg-violet-600
-                            px-4 py-2.5
+                            px-4
+                            py-2.5
                             text-sm
                             font-medium
                             text-white
@@ -331,11 +497,15 @@ export default function TLEUpload({
                             disabled:opacity-50
                         "
                     >
-                        <Save size={16} />
+
+                        <Save
+                            size={16}
+                        />
 
                         {loading
                             ? "Saving..."
                             : "Save Satellite"}
+
                     </button>
 
                 </div>

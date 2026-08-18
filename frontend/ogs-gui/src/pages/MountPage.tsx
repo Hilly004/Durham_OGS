@@ -4,8 +4,11 @@ import {
     useState,
 } from "react";
 
-import MountControls from "../components/Mount/MountControls";
-import MountStatus from "../components/Mount/MountStatus";
+import MountControls
+    from "../components/Mount/MountControls";
+
+import MountStatus
+    from "../components/Mount/MountStatus";
 
 import {
     connectMount,
@@ -27,25 +30,28 @@ export default function MountPage() {
         useState(false);
 
 
-    const updateStatus = useCallback(async () => {
+    const updateStatus =
+        useCallback(async () => {
 
-        try {
+            try {
 
-            const result =
-                await getMountStatus();
+                const result =
+                    await getMountStatus();
 
-            setStatus(result);
+                setStatus(result);
 
-        } catch (error) {
+            } catch (error) {
 
-            console.error(
-                "Unable to retrieve mount status:",
-                error
-            );
+                console.error(
+                    "Unable to retrieve mount status:",
+                    error
+                );
 
-        }
+                setStatus(null);
 
-    }, []);
+            }
+
+        }, []);
 
 
     useEffect(() => {
@@ -76,8 +82,6 @@ export default function MountPage() {
                 await connectMount();
             }
 
-            await updateStatus();
-
         } catch (error) {
 
             console.error(
@@ -85,9 +89,12 @@ export default function MountPage() {
                 error
             );
 
-            await updateStatus();
-
         } finally {
+
+            /*
+             * Always ask the backend for the real state.
+             */
+            await updateStatus();
 
             setLoading(false);
 
@@ -118,6 +125,7 @@ export default function MountPage() {
                 "
             >
 
+                {/* Title */}
                 <div>
 
                     <h1
@@ -130,16 +138,23 @@ export default function MountPage() {
                         Mount Control
                     </h1>
 
-                    <p className="text-sm text-slate-400">
+                    <p
+                        className="
+                            text-sm
+                            text-slate-400
+                        "
+                    >
                         Telescope mount control and positioning
                     </p>
 
                 </div>
 
 
+                {/* Connection */}
                 <div className="flex items-center gap-3">
 
                     <button
+                        type="button"
                         onClick={handleConnection}
                         disabled={loading}
                         className="
@@ -185,6 +200,7 @@ export default function MountPage() {
                                 h-2.5
                                 w-2.5
                                 rounded-full
+
                                 ${
                                     status?.connected
                                         ? "bg-green-500"
@@ -212,17 +228,37 @@ export default function MountPage() {
                     grid
                     min-h-0
                     flex-1
-                    grid-cols-2
+                    grid-cols-12
                     gap-4
                 "
             >
 
-                <div className="min-h-0 overflow-hidden">
+                {/* Status */}
+                <div
+                    className="
+                        col-span-5
+                        min-h-0
+                        overflow-hidden
+                    "
+                >
                     <MountStatus />
                 </div>
 
-                <div className="min-h-0 overflow-hidden">
-                    <MountControls />
+
+                {/* Controls */}
+                <div
+                    className="
+                        col-span-7
+                        min-h-0
+                        overflow-hidden
+                    "
+                >
+                    
+                    <MountControls
+                        connected={
+                            status?.connected ?? false
+                        }
+                    />
                 </div>
 
             </div>

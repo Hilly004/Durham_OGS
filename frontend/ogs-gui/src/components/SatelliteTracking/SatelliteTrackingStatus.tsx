@@ -1,25 +1,59 @@
-import { useEffect, useState } from "react";
+import {
+    useEffect,
+    useState,
+} from "react";
 
-import StatusCard from "../Common/DashboardStatusCard";
-import { getSatelliteTrackingStatus } from "../../api/satellite";
+import {
+    getSatelliteTrackingStatus,
+} from "../../api/satellite";
+
+import {
+    getMountPosition,
+    getMountPosition_rd,
+} from "../../api/mount";
+
+import DashboardStatusCard
+    from "../Common/DashboardStatusCard";
 
 
 interface TrackingStatus {
+
+    status:
+        | "slewing"
+        | "waiting"
+        | "catching"
+        | "tracking"
+        | "ended"
+        | "idle";
+
     tracking: boolean;
-    azimuth?: number;
-    altitude?: number;
-    ra?: number;
-    dec?: number;
+
+    satelliteId:
+        number | null;
+
+    satelliteName:
+        string | null;
+
+    azimuth:
+        number | null;
+
+    altitude:
+        number | null;
+
+    ra:
+        number | null;
+
+    dec:
+        number | null;
 }
 
 
 export default function SatelliteTrackingStatusWidget() {
 
     const [status, setStatus] =
-        useState<TrackingStatus | null>(null);
-
-    const [error, setError] =
-        useState<string | null>(null);
+        useState<TrackingStatus | null>(
+            null
+        );
 
 
     useEffect(() => {
@@ -28,55 +62,160 @@ export default function SatelliteTrackingStatusWidget() {
 
             try {
 
-                const result = await getSatelliteTrackingStatus();
+                /*
+                 * Get tracking state and
+                 * current mount coordinates
+                 * simultaneously.
+                 */
+                const [
+                    trackingResult,
+                    altAzResult,
+                    raDecResult,
+                ] = await Promise.allSettled([
+                    getSatelliteTrackingStatus(),
+                    getMountPosition(),
+                    getMountPosition_rd(),
+                ]);
 
-                setStatus(result.data);
-                setError(null);
+
+                if (
+                    trackingResult.status !==
+                    "fulfilled"
+                ) {
+                    return;
+                }
+
+
+                const tracking =
+                    trackingResult.value.data;
+
+
+                const altAz =
+                    altAzResult.status ===
+                    "fulfilled"
+                        ? altAzResult.value
+                        : null;
+
+
+                const raDec =
+                    raDecResult.status ===
+                    "fulfilled"
+                        ? raDecResult.value
+                        : null;
+
+
+                setStatus({
+                    status:
+                        tracking.status,
+
+                    tracking:
+                        tracking.tracking,
+
+                    satelliteId:
+                        tracking.satellite_id,
+
+                    satelliteName:
+                        tracking.satellite_name,
+
+                    altitude:
+                        altAz?.alt ?? null,
+
+                    azimuth:
+                        altAz?.az ?? null,
+
+                    ra:
+                        raDec?.ra ?? null,
+
+                    dec:
+                        raDec?.dec ?? null,
+                });
+
 
             } catch (error) {
 
-                if (error instanceof Error) {
-                    setError(error.message);
-                } else {
-                    setError(
-                        "Unable to retrieve tracking status"
-                    );
-                }
+                console.error(
+                    "Unable to retrieve satellite tracking status:",
+                    error
+                );
 
             }
-
         }
 
 
         updateStatus();
 
-        const interval = setInterval(
-            updateStatus,
-            2000
-        );
+
+        const interval =
+            setInterval(
+                updateStatus,
+                1000
+            );
 
 
         return () => {
-            clearInterval(interval);
+            clearInterval(
+                interval
+            );
         };
 
     }, []);
 
 
+    const active =
+        status?.status === "tracking" ||
+        status?.status === "slewing" ||
+        status?.status === "waiting" ||
+        status?.status === "catching";
+
+
     return (
-        <StatusCard
+        <DashboardStatusCard
             title="Tracking Status"
-            status={
-                status?.tracking
-                    ? "connected"
-                    : "disconnected"
-            }
+            connected={active}
         >
 
             <div className="space-y-4">
 
-                {/* Tracking State */}
+                {/* Satellite */}
+                <div
+                    className="
+                        rounded-lg
+                        border
+                        border-slate-800
+                        bg-slate-950/50
+                        p-4
+                    "
+                >
 
+                    <p
+                        className="
+                            text-xs
+                            uppercase
+                            tracking-wide
+                            text-slate-500
+                        "
+                    >
+                        Satellite
+                    </p>
+
+                    <p
+                        className="
+                            mt-1
+                            text-base
+                            font-medium
+                            text-slate-100
+                        "
+                    >
+                        {
+                            status?.satelliteName
+                            ?? "No satellite selected"
+                        }
+                    </p>
+
+                </div>
+
+
+                {/* Tracking State */}
                 <div
                     className="
                         flex
@@ -90,11 +229,23 @@ export default function SatelliteTrackingStatusWidget() {
                     "
                 >
 
-                    <span className="text-sm text-slate-400">
-                        Tracking
+                    <span
+                        className="
+                            text-sm
+                            text-slate-400
+                        "
+                    >
+                        State
                     </span>
 
-                    <div className="flex items-center gap-2">
+
+                    <div
+                        className="
+                            flex
+                            items-center
+                            gap-2
+                        "
+                    >
 
                         <span
                             className={`
@@ -103,23 +254,26 @@ export default function SatelliteTrackingStatusWidget() {
                                 rounded-full
 
                                 ${
-                                    status?.tracking
+                                    active
                                         ? "bg-green-500"
                                         : "bg-slate-600"
                                 }
                             `}
                         />
 
+
                         <span
                             className={
-                                status?.tracking
+                                active
                                     ? "text-sm font-medium text-green-400"
                                     : "text-sm font-medium text-slate-400"
                             }
                         >
-                            {status?.tracking
-                                ? "Active"
-                                : "Inactive"}
+                            {
+                                formatTrackingState(
+                                    status?.status
+                                )
+                            }
                         </span>
 
                     </div>
@@ -127,71 +281,114 @@ export default function SatelliteTrackingStatusWidget() {
                 </div>
 
 
-                {/* Coordinates */}
+                {/* Alt / Az */}
+                <div>
 
-                <div className="grid grid-cols-2 gap-3">
+                    <p
+                        className="
+                            mb-2
+                            text-[10px]
+                            font-semibold
+                            uppercase
+                            tracking-widest
+                            text-slate-500
+                        "
+                    >
+                        Alt / Az
+                    </p>
 
-                    <StatusValue
-                        label="Azimuth"
-                        value={
-                            status?.azimuth !== undefined
-                                ? `${status.azimuth.toFixed(2)}°`
-                                : "—"
-                        }
-                    />
 
-                    <StatusValue
-                        label="Altitude"
-                        value={
-                            status?.altitude !== undefined
-                                ? `${status.altitude.toFixed(2)}°`
-                                : "—"
-                        }
-                    />
+                    <div
+                        className="
+                            grid
+                            grid-cols-2
+                            gap-3
+                        "
+                    >
 
-                    <StatusValue
-                        label="RA"
-                        value={
-                            status?.ra !== undefined
-                                ? status.ra.toFixed(4)
-                                : "—"
-                        }
-                    />
+                        <StatusValue
+                            label="Altitude"
+                            value={
+                                status?.altitude !==
+                                null &&
+                                status?.altitude !==
+                                undefined
+                                    ? `${status.altitude.toFixed(2)}°`
+                                    : "—"
+                            }
+                        />
 
-                    <StatusValue
-                        label="DEC"
-                        value={
-                            status?.dec !== undefined
-                                ? `${status.dec.toFixed(4)}°`
-                                : "—"
-                        }
-                    />
+
+                        <StatusValue
+                            label="Azimuth"
+                            value={
+                                status?.azimuth !==
+                                null &&
+                                status?.azimuth !==
+                                undefined
+                                    ? `${status.azimuth.toFixed(2)}°`
+                                    : "—"
+                            }
+                        />
+
+                    </div>
 
                 </div>
 
 
-                {/* Error */}
+                {/* RA / DEC */}
+                <div>
 
-                {error && (
-                    <div
+                    <p
                         className="
-                            rounded-lg
-                            border
-                            border-red-500/20
-                            bg-red-500/10
-                            px-3
-                            py-2
-                            text-sm
-                            text-red-300
+                            mb-2
+                            text-[10px]
+                            font-semibold
+                            uppercase
+                            tracking-widest
+                            text-slate-500
                         "
                     >
-                        {error}
+                        RA / DEC
+                    </p>
+
+
+                    <div
+                        className="
+                            grid
+                            grid-cols-2
+                            gap-3
+                        "
+                    >
+
+                        <StatusValue
+                            label="RA"
+                            value={
+                                status?.ra !== null &&
+                                status?.ra !== undefined
+                                    ? `${status.ra.toFixed(4)} h`
+                                    : "—"
+                            }
+                        />
+
+
+                        <StatusValue
+                            label="DEC"
+                            value={
+                                status?.dec !== null &&
+                                status?.dec !== undefined
+                                    ? `${status.dec.toFixed(4)}°`
+                                    : "—"
+                            }
+                        />
+
                     </div>
-                )}
+
+                </div>
 
             </div>
 
-        </StatusCard>
+        </DashboardStatusCard>
     );
 }
 
@@ -226,6 +423,7 @@ function StatusValue({
                 {label}
             </p>
 
+
             <p
                 className="
                     mt-1
@@ -239,4 +437,33 @@ function StatusValue({
 
         </div>
     );
+}
+
+
+function formatTrackingState(
+    state:
+        TrackingStatus["status"]
+        | undefined
+) {
+
+    switch (state) {
+
+        case "slewing":
+            return "Slewing";
+
+        case "waiting":
+            return "Waiting";
+
+        case "catching":
+            return "Catching";
+
+        case "tracking":
+            return "Tracking";
+
+        case "ended":
+            return "Ended";
+
+        default:
+            return "Idle";
+    }
 }

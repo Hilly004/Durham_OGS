@@ -42,6 +42,10 @@ class SlewRequest(BaseModel):
     ra: float
     dec: float
 
+class NudgeRequest(BaseModel):
+    direction: str
+    step_arcsec: int
+
 # -------------------------------------------------------------------------------
 # CONNECTION
 # -------------------------------------------------------------------------------
@@ -280,4 +284,109 @@ def start_tracking():
 
     return {
         'success': True
+    }
+
+@router.post('/nudge')
+def nudge(
+    request: NudgeRequest
+):
+
+    mount_controller = get_controller()
+
+    try:
+
+        mount_controller.nudge(
+            request.direction,
+            request.step_arcsec
+        )
+
+
+    except ConnectionError:
+
+        raise HTTPException(
+            status_code=503,
+            detail='Mount not connected'
+        )
+
+
+    except ValueError as e:
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
+
+
+    except RuntimeError as e:
+
+        raise HTTPException(
+            status_code=409,
+            detail=str(e)
+        )
+
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=f'Mount nudge failed: {e}'
+        )
+
+
+    return {
+        'success': True
+    }
+
+@router.post("/move/{direction}")
+def move(direction: str):
+
+    controller = get_controller()
+
+    if direction == "north":
+        controller.move_north()
+
+    elif direction == "south":
+        controller.move_south()
+
+    elif direction == "east":
+        controller.move_east()
+
+    elif direction == "west":
+        controller.move_west()
+
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid direction"
+        )
+
+    return {
+        "success": True
+    }
+
+@router.post("/stop/{direction}")
+def stop(direction: str):
+
+    controller = get_controller()
+
+    if direction == "north":
+        controller.stop_north()
+
+    elif direction == "south":
+        controller.stop_south()
+
+    elif direction == "east":
+        controller.stop_east()
+
+    elif direction == "west":
+        controller.stop_west()
+
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid direction"
+        )
+
+    return {
+        "success": True
     }

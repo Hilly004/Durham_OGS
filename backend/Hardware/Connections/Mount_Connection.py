@@ -20,7 +20,7 @@ class MountConnection:
         
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.settimeout(2)
+            self.socket.settimeout(5)
             self.socket.connect((self.host, self.port))
         
             self.socket.sendall(b':U2#')
@@ -69,16 +69,46 @@ class MountConnection:
             if terminator in response:
                 return response
 
-    def send_receive(self,message, terminator='#'):
+    def send_receive(
+        self,
+        message,
+        terminator='#'
+    ):
+
         if not self.connected:
-            raise RuntimeError('Mount not connected')
+            raise RuntimeError(
+                'Mount not connected'
+            )
+
         try:
+
             with self.command_lock:
+
                 self.send(message)
-                return self.receive(terminator)
-        
-        except socket.error:
+
+                return self.receive(
+                    terminator
+                )
+
+
+        except socket.timeout:
+
+            # A timeout does not necessarily mean
+            # the TCP connection has been lost.
+            raise TimeoutError(
+                f'Mount response timeout for command: {message}'
+            )
+
+
+        except (
+            ConnectionError,
+            BrokenPipeError,
+            ConnectionResetError,
+            OSError
+        ):
+
             self.disconnect()
+
             raise
 
         

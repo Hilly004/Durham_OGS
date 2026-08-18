@@ -30,18 +30,19 @@ def get_controller() -> WeatherController:
 
 @router.get('/status')
 def status():
-    weather_controller = get_controller()
 
-    weather_status = weather_controller.get_status()
+    weather_controller = (
+        get_controller()
+    )
+
+    weather_status = (
+        weather_controller
+        .get_status()
+    )
 
     return {
         'success': True,
-        'data': {
-            'connected': weather_controller.is_connected,
-            'safe': weather_status['safe'],
-            'state': weather_status['state'],
-            'reason': weather_status['reason']
-        }
+        'data': weather_status
     }
 
 

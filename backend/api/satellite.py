@@ -15,8 +15,19 @@ from Repository.SatelliteRepo import SatelliteRepository
 router = APIRouter()
 mount = None
 
+active_satellite_id = None
+active_satellite_name = None
+
 from pydantic import BaseModel, Field
 
+
+activity_logger = None
+
+
+def set_logger(logger):
+    global activity_logger
+    activity_logger = logger
+    
 class PassPredictionRequest(BaseModel):
     jd: float
     minutes: int = Field(
@@ -142,12 +153,25 @@ def predict_pass(
     request: PassPredictionRequest,
     db: Session = Depends(get_db),
 ):
+    global active_satellite_id
+    global active_satellite_name
+
     repository = SatelliteRepository(db)
 
     service = SatelliteService(
         repository,
         get_mount()
     )
+
+    satellite = service.get_satellite(
+        satellite_id
+    )
+
+    if satellite is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Satellite not found"
+        )
 
     try:
         result = service.predict_pass(
@@ -162,11 +186,8 @@ def predict_pass(
             detail=str(e)
         )
 
-    if result is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Satellite not found"
-        )
+    active_satellite_id = satellite.id
+    active_satellite_name = satellite.name
 
     return {
         "success": True,
@@ -178,6 +199,9 @@ def slew_to_satellite(
     satellite_id: int,
     db: Session = Depends(get_db),
 ):
+    global active_satellite_id
+    global active_satellite_name
+
     repository = SatelliteRepository(db)
 
     service = SatelliteService(
@@ -185,13 +209,18 @@ def slew_to_satellite(
         get_mount()
     )
 
-    satellite = service.get_satellite(satellite_id)
+    satellite = service.get_satellite(
+        satellite_id
+    )
 
     if satellite is None:
         raise HTTPException(
             status_code=404,
             detail="Satellite not found"
         )
+
+    active_satellite_id = satellite.id
+    active_satellite_name = satellite.name
 
     try:
         result = service.slew_to_satellite()
@@ -229,6 +258,14 @@ def get_tracking_status(
             status_code=502,
             detail=str(e)
         )
+
+    result["satellite_id"] = (
+        active_satellite_id
+    )
+
+    result["satellite_name"] = (
+        active_satellite_name
+    )
 
     return {
         "success": True,

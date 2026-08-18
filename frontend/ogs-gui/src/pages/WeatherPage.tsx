@@ -5,11 +5,6 @@ import {
 } from "react";
 
 import {
-    CloudSun,
-    RefreshCw,
-} from "lucide-react";
-
-import {
     connectWeather,
     disconnectWeather,
     getWeatherStatus,

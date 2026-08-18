@@ -25,7 +25,8 @@ from api.observatory import (
 
 from api.satellite import (
     router as satellite_router,
-    set_mount as set_satellite_mount
+    set_mount as set_satellite_mount,
+    set_logger as set_satellite_logger
 )
 
 from api.activity import (
@@ -70,6 +71,7 @@ app = FastAPI(title="Durham OGS API", lifespan=lifespan)
 ### LOGGER ###
 logger = ObservatoryLogger()
 set_activity_logger(logger)
+set_satellite_logger(logger)
 
 ###  MOUNT  ###
 connection = MountConnection(host, port)

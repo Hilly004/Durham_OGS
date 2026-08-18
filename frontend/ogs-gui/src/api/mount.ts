@@ -123,3 +123,57 @@ export async function disconnectMount(): Promise<void> {
         throw new Error("Failed to disconnect mount");
     }
 }   
+
+export type ManualMoveDirection =
+    | "north"
+    | "south"
+    | "east"
+    | "west";
+
+
+export async function startManualMove(
+    direction: ManualMoveDirection
+): Promise<void> {
+
+    const response = await fetch(
+        `/api/mount/move/${direction}`,
+        {
+            method: "POST",
+        }
+    );
+
+
+    if (!response.ok) {
+
+        const message =
+            await response.text();
+
+        throw new Error(
+            `Unable to move mount ${direction}: ${message}`
+        );
+    }
+}
+
+
+export async function stopManualMove(
+    direction: ManualMoveDirection
+): Promise<void> {
+
+    const response = await fetch(
+        `/api/mount/stop/${direction}`,
+        {
+            method: "POST",
+        }
+    );
+
+
+    if (!response.ok) {
+
+        const message =
+            await response.text();
+
+        throw new Error(
+            `Unable to stop mount ${direction}: ${message}`
+        );
+    }
+}

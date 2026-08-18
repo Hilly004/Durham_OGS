@@ -22,22 +22,45 @@ class AstroHavenDome:
     #########################################################################
 
     def open_dome(self):
-        self.connection.write_coil(23, True)
+        return self.connection.write_coil(
+            23,
+            True
+        )
+
 
     def close_dome(self):
-        self.connection.write_coil(4, True)
+        return self.connection.write_coil(
+            4,
+            True
+        )
+
 
     def open_left(self):
-        self.connection.write_coil(18, True)
+        return self.connection.write_coil(
+            18,
+            True
+        )
+
 
     def close_left(self):
-        self.connection.write_coil(9, True)
+        return self.connection.write_coil(
+            9,
+            True
+        )
+
 
     def open_right(self):
-        self.connection.write_coil(34, True)
+        return self.connection.write_coil(
+            34,
+            True
+        )
+
 
     def close_right(self):
-        self.connection.write_coil(26, True)
+        return self.connection.write_coil(
+            26,
+            True
+        )
 
     def progressive_close(self):
         self.connection.write_coil(25, True)

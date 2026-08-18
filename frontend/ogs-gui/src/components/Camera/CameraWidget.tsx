@@ -5,7 +5,7 @@ export default function CameraWidget() {
     return (
         <StatusCard
             title="Camera"
-            status="disconnected"
+            connected={false}
         >
 
             {/* Camera feed placeholder */}

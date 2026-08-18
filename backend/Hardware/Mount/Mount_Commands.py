@@ -866,37 +866,43 @@ class TenMicronMount:
         return self.command(message)
 
     def slew_to_altaz(self):
-        """Start a slew to the previously defined target altitude/azimuth (no tracking afterwards).
-        Format: no input (set target first with set_target_altitude()/set_target_azimuth()).
-        Returns: '0' no error; or an error string: "1Object Below Horizon #", "2Object Below Higher #",
-        "3Cannot Perform Slew #", "4Mount Parked #", "5Object on the other side #".
-        """
+
         message = ':MA#'
-        return self.query(message)
+
+        return self.query(
+            message,
+            terminator=None
+        )
+
 
     def slew_to_target(self):
-        """Start a slew to the previously defined target RA/Dec (tracking starts afterwards).
-        Format: no input (set target first with set_target_ra()/set_target_declination()).
-        Returns: '0' no error; or an error string: "1Object Below Horizon #", "2Object Below Higher #",
-        "3Cannot Perform Slew #", "4Mount Parked #", "5Object on the other side #".
-        """
+
         message = ':MS#'
-        return self.query(message)
+
+        return self.query(
+            message,
+            terminator=None
+        )
+
 
     def slew_to_target_side(self, n):
-        """Slew to the previously defined target RA/Dec, forcing a specific pier side.
-        Format: n = 2 (west) or 3 (east).
-        Returns: same error codes as slew_to_target(). Available from v2.9.9.
-        """
+
         message = ':MSfs' + str(n) + '#'
-        return self.query(message)
+
+        return self.query(
+            message,
+            terminator=None
+        )
+
 
     def slew_to_target_no_fine_limit(self):
-        """Slew to the previously defined target RA/Dec, ignoring the fine movement same-side limit.
-        Returns: same error codes as slew_to_target(). Available from v2.11.
-        """
+
         message = ':MSnf#'
-        return self.query(message)
+
+        return self.query(
+            message,
+            terminator=None
+        )
 
     def swap_east_west(self):
         """Swap the east and west movement directions.

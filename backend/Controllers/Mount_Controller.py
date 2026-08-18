@@ -125,7 +125,89 @@ class MountController:
     def stop_east(self):
         self.mount.stop_east()
 
+    def nudge(
+        self,
+        direction: str,
+        step_arcsec: int
+    ):
+        """
+        Nudge the mount by a fixed angular offset.
 
+        step_arcsec:
+            Offset in arcseconds.
+        """
+
+        if not self.mount.is_connected():
+            raise ConnectionError(
+                "Mount not connected"
+            )
+
+        if step_arcsec < 1 or step_arcsec > 3600:
+            raise ValueError(
+                "Nudge step must be between 1 and 3600 arcseconds"
+            )
+
+        direction = direction.lower()
+
+
+        if direction == "north":
+
+            ra_offset = 0
+            dec_offset = step_arcsec
+
+
+        elif direction == "south":
+
+            ra_offset = 0
+            dec_offset = -step_arcsec
+
+
+        elif direction == "east":
+
+            ra_offset = step_arcsec
+            dec_offset = 0
+
+
+        elif direction == "west":
+
+            ra_offset = -step_arcsec
+            dec_offset = 0
+
+
+        else:
+
+            raise ValueError(
+                f"Invalid nudge direction: {direction}"
+            )
+
+
+        response = self.mount.nudge_offset(
+            ra_offset,
+            dec_offset
+        )
+
+
+        self.logger.info(
+            (
+                f"Mount nudge {direction}: "
+                f"{step_arcsec} arcsec "
+                f"(response: {response})"
+            ),
+            source="MOUNT"
+        )
+
+
+        if response not in (
+            "0",
+            "0#",
+        ):
+
+            raise RuntimeError(
+                f"Mount rejected nudge: {response}"
+            )
+
+
+        return True
 
     def slew_to_target(self):
         self.mount.slew_to_target()
@@ -250,7 +332,20 @@ class MountController:
         
 
     def unpark(self):
+
+        if not self.mount.is_connected():
+            raise ConnectionError(
+                "Mount not connected"
+            )
+
         self.mount.unpark()
+
+        self.logger.success(
+            "Mount unpark command sent",
+            source="MOUNT"
+        )
+
+        return True
 
     def get_home_status(self):
         return self.mount.query_home_status()

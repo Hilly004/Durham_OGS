@@ -5,25 +5,46 @@ class DomeController:
         self.logger = logger
 
     def connect(self):
+
         try:
+
             connected = self.dome.connect()
 
             if not connected:
+
                 self.logger.error(
-                f'Dome connection failed',
-                              source='DOME')
+                    "Dome connection failed",
+                    source="DOME"
+                )
+
                 return False
-            
+
+
+            if not self.dome.is_connected():
+
+                self.logger.error(
+                    "Dome connection failed",
+                    source="DOME"
+                )
+
+                return False
+
+
             self.logger.success(
-                'Dome connected',
-                source='DOME'
+                "Dome connected",
+                source="DOME"
             )
+
             return True
-        
+
+
         except Exception as e:
+
             self.logger.error(
-                f'Dome connection failed: {e}',
-                              source='DOME')
+                f"Dome connection failed: {e}",
+                source="DOME"
+            )
+
             return False
             
 
