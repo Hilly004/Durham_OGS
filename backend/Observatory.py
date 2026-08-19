@@ -39,34 +39,74 @@ class ObservatoryController:
 
     def _monitor(self):
 
-        prev_safe = True
+        last_monitor_error = None
 
         while self.running:
+
             try:
+
                 self.weather.update()
-                currently_safe = self.safety.is_safe()
+
+                currently_safe = (
+                    self.safety.is_safe()
+                )
+
 
                 if currently_safe:
+
                     self.safety_monitor_armed = True
+
                     self.unsafe_shutdown_triggered = False
 
+
                 elif self.safety_monitor_armed:
+
                     if (
                         not self.unsafe_shutdown_triggered
-                        and not self.shutdown_in_progress
+                        and
+                        not self.shutdown_in_progress
                     ):
+
                         self.shutdown_in_progress = True
 
+
                         try:
+
                             self.safe_shutdown()
+
                             self.unsafe_shutdown_triggered = True
 
+
                         finally:
+
                             self.shutdown_in_progress = False
 
+
+                # Monitoring completed successfully.
+                # Allow a future error to be logged.
+                last_monitor_error = None
+
+
             except Exception as e:
-                self.logger.error(f'Monitoring error: {e}',
-                                  source='SYSTEM')
+
+                error_message = str(e)
+
+
+                # Only log the error when it changes.
+                if (
+                    error_message
+                    != last_monitor_error
+                ):
+
+                    self.logger.error(
+                        f"Monitoring error: {error_message}",
+                        source="SYSTEM"
+                    )
+
+                    last_monitor_error = (
+                        error_message
+                    )
+
 
             time.sleep(10)    #change number eventually
 
@@ -104,28 +144,52 @@ class ObservatoryController:
         return self.dome.open_right()
     
     def close_left(self):
+
         if self.mount.is_connected():
             self.mount.stop_motion()
+
+
+        if not self.dome.is_connected:
+            return False
+
+
         return self.dome.close_left()
 
 
     def close_right(self):
+
         if self.mount.is_connected():
             self.mount.stop_motion()
+
+
+        if not self.dome.is_connected:
+            return False
+
+
         return self.dome.close_right()
 
     def get_safety_status(self):
         return self.safety.get_status()
 
     def close_dome(self):
+
         if self.mount.is_connected():
             self.mount.stop_motion()
+
+
+        if not self.dome.is_connected:
+            return False
+
+
         return self.dome.close_dome()
 
     def safe_shutdown(self):
+
         if self.mount.is_connected():
             self.mount.stop_motion()
-        self.dome.close_dome()
+
+        if self.dome.is_connected:
+            self.dome.close_dome()
 
 
     def unpark_mount(self):

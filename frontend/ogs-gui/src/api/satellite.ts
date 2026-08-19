@@ -349,3 +349,94 @@ number {
         + 2440587.5
     );
 }
+
+/*
+ * Delete one stored satellite
+ */
+export async function deleteSatellite(
+    satelliteId: number
+): Promise<{ message: string }> {
+
+    const response = await fetch(
+        `/api/satellites/${satelliteId}`,
+        {
+            method: "DELETE",
+        }
+    );
+
+
+    if (!response.ok) {
+
+        let message =
+            "Failed to delete satellite";
+
+
+        try {
+
+            const error =
+                await response.json();
+
+            message =
+                error.detail ??
+                message;
+
+        } catch {
+            // Keep default message
+        }
+
+
+        throw new Error(
+            message
+        );
+    }
+
+
+    return response.json();
+}
+
+
+/*
+ * Delete all stored satellites
+ */
+export async function deleteAllSatellites():
+Promise<{
+    message: string;
+    deleted: number;
+}> {
+
+    const response = await fetch(
+        "/api/satellites/",
+        {
+            method: "DELETE",
+        }
+    );
+
+
+    if (!response.ok) {
+
+        let message =
+            "Failed to delete satellites";
+
+
+        try {
+
+            const error =
+                await response.json();
+
+            message =
+                error.detail ??
+                message;
+
+        } catch {
+            // Keep default message
+        }
+
+
+        throw new Error(
+            message
+        );
+    }
+
+
+    return response.json();
+}

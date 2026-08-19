@@ -16,6 +16,7 @@ import DomePage from "./pages/DomePage";
 import WeatherPage from "./pages/WeatherPage";
 import SatellitePage from "./pages/SatellitePage";
 import SettingsPage from "./pages/SettingsPage";
+import CameraPage from "./pages/CameraPage";
 
 
 export default function App() {
@@ -45,6 +46,11 @@ export default function App() {
                         <Route
                             path="dome"
                             element={<DomePage />}
+                        />
+
+                        <Route
+                            path="camera"
+                            element={<CameraPage />}
                         />
 
                         <Route

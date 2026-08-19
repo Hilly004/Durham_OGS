@@ -1,8 +1,29 @@
+import {
+    useState,
+} from "react";
+
 import CameraWidget
     from "../components/Camera/CameraWidget";
 
+import type {
+    CameraStatusData,
+} from "../api/camera";
+
 
 export default function CameraPage() {
+
+    const [
+        status,
+        setStatus,
+    ] = useState<CameraStatusData>({
+        connected: false,
+        streaming: false,
+        camera: null,
+        exposure: null,
+        gain: null,
+        frame_count: 0,
+    });
+
 
     return (
         <div
@@ -18,6 +39,7 @@ export default function CameraPage() {
         >
 
             {/* Header */}
+
             <div
                 className="
                     flex
@@ -45,7 +67,11 @@ export default function CameraPage() {
                             text-slate-400
                         "
                     >
-                        Imaging camera control and acquisition
+
+                        {status.camera
+                            ? `${status.camera.name} · ${status.camera.serial}`
+                            : "Imaging camera control and acquisition"}
+
                     </p>
 
                 </div>
@@ -66,13 +92,21 @@ export default function CameraPage() {
                 >
 
                     <span
-                        className="
+                        className={`
                             h-2.5
                             w-2.5
                             rounded-full
-                            bg-red-500
-                        "
+
+                            ${
+                                status.streaming
+                                    ? "animate-pulse bg-red-500"
+                                    : status.connected
+                                        ? "bg-green-500"
+                                        : "bg-red-500"
+                            }
+                        `}
                     />
+
 
                     <span
                         className="
@@ -80,7 +114,13 @@ export default function CameraPage() {
                             text-slate-300
                         "
                     >
-                        Disconnected
+
+                        {status.streaming
+                            ? "Live"
+                            : status.connected
+                                ? "Connected"
+                                : "Disconnected"}
+
                     </span>
 
                 </div>
@@ -89,6 +129,7 @@ export default function CameraPage() {
 
 
             {/* Camera */}
+
             <div
                 className="
                     min-h-0
@@ -96,7 +137,13 @@ export default function CameraPage() {
                     overflow-hidden
                 "
             >
-                <CameraWidget />
+
+                <CameraWidget
+                    onStatusChange={
+                        setStatus
+                    }
+                />
+
             </div>
 
         </div>

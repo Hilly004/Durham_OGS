@@ -56,4 +56,15 @@ class SatelliteRepository:
     def delete_satellite(self,satellite):
         self.db.delete(satellite)
         self.db.commit()
+
+    def delete_all_satellites(self):
+        count = (
+            self.db.query(Satellite)
+            .delete(
+                synchronize_session=False
+            )
+        )
+
+        self.db.commit()
+        return count
     

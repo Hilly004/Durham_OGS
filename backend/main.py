@@ -34,6 +34,11 @@ from api.activity import (
     set_logger as set_activity_logger
 )
 
+from api.camera import (
+    router as camera_router,
+    set_controller as set_camera_controller
+)
+
 from Controllers.Mount_Controller import MountController
 from Hardware.Mount.Mount_Commands import TenMicronMount
 from Hardware.Connections.Mount_Connection import MountConnection
@@ -48,6 +53,9 @@ from Utilities.Config import dome_host,dome_port
 from Controllers.Weather_Controller import WeatherController
 from Hardware.Weather.Weather_Commands import WeatherMonitor
 
+from Controllers.Camera_Controller import CameraController
+from Hardware.Camera.Camera_Commands import MakoCamera
+
 from Observatory import ObservatoryController
 
 from database.database import Base, engine
@@ -57,11 +65,17 @@ from Utilities.Observatory_Logger import ObservatoryLogger
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+
     observatory_controller.start()
 
     try:
         yield
+
     finally:
+
+        if camera_controller.is_connected():
+            camera_controller.disconnect()
+
         observatory_controller.stop()
 
 Base.metadata.create_all(bind=engine)
@@ -91,6 +105,21 @@ weather_monitor = WeatherMonitor()
 weather_controller = WeatherController(weather_monitor,logger)
 set_weather_controller(weather_controller)
 
+### CAMERA ###
+
+camera_driver = MakoCamera(
+    camera_id="DEV_1AB2280007CD"
+)
+
+camera_controller = CameraController(
+    camera_driver,
+    logger
+)
+
+set_camera_controller(
+    camera_controller
+)
+
 ### SATELLITE ###
 
 set_satellite_mount(mount_driver)
@@ -117,6 +146,7 @@ set_mount_observatory_controller(
 app.include_router(mount_router)
 app.include_router(dome_router)
 app.include_router(weather_router)
+app.include_router(camera_router)
 app.include_router(observatory_router)
 app.include_router(
     satellite_router,

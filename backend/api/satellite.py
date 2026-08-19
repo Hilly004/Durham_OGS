@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 
 activity_logger = None
 
+last_tracking_status = None
 
 def set_logger(logger):
     global activity_logger
@@ -59,7 +60,8 @@ def create_satellite(
 
     service = SatelliteService(
         repository,
-        get_mount()
+        get_mount(),
+        activity_logger
     )
 
     try:
@@ -90,7 +92,8 @@ def list_satellites(
 
     service = SatelliteService(
         repository,
-        get_mount()
+        get_mount(),
+        activity_logger
     )
 
     return service.list_satellites()
@@ -105,7 +108,8 @@ def get_satellite(
 
     service = SatelliteService(
         repository,
-        get_mount()
+        get_mount(),
+        activity_logger
     )
 
     satellite = service.get_satellite(satellite_id)
@@ -118,31 +122,73 @@ def get_satellite(
 
     return satellite
 
+@router.delete("/")
+def delete_all_satellites(
+    db: Session = Depends(get_db),
+):
+    global active_satellite_id
+    global active_satellite_name
 
+    repository = SatelliteRepository(db)
+
+    service = SatelliteService(
+        repository,
+        get_mount(),
+        activity_logger
+    )
+
+    deleted_count = (
+        service.delete_all_satellites()
+    )
+
+    active_satellite_id = None
+    active_satellite_name = None
+
+    return {
+        "message": (
+            f"{deleted_count} satellite"
+            f"{'' if deleted_count == 1 else 's'} deleted"
+        ),
+        "deleted": deleted_count
+    }
 
 @router.delete("/{satellite_id}")
 def delete_satellite(
     satellite_id: int,
     db: Session = Depends(get_db),
 ):
+    global active_satellite_id
+    global active_satellite_name
+
     repository = SatelliteRepository(db)
 
     service = SatelliteService(
         repository,
-        get_mount()
+        get_mount(),
+        activity_logger
     )
 
-    deleted = service.delete_satellite(satellite_id)
+    deleted = service.delete_satellite(
+        satellite_id
+    )
 
     if not deleted:
         raise HTTPException(
             status_code=404,
-            detail='Satellite not found'
+            detail="Satellite not found"
         )
+
+    if (
+        active_satellite_id
+        == satellite_id
+    ):
+        active_satellite_id = None
+        active_satellite_name = None
 
     return {
         "message": "Satellite deleted"
     }
+
 
 @router.post(
     "/{satellite_id}/predict",
@@ -160,7 +206,8 @@ def predict_pass(
 
     service = SatelliteService(
         repository,
-        get_mount()
+        get_mount(),
+        activity_logger
     )
 
     satellite = service.get_satellite(
@@ -206,7 +253,8 @@ def slew_to_satellite(
 
     service = SatelliteService(
         repository,
-        get_mount()
+        get_mount(),
+        activity_logger
     )
 
     satellite = service.get_satellite(
@@ -243,21 +291,163 @@ def slew_to_satellite(
 def get_tracking_status(
     db: Session = Depends(get_db),
 ):
+    global last_tracking_status
+
     repository = SatelliteRepository(db)
 
     service = SatelliteService(
         repository,
-        get_mount()
+        get_mount(),
+        activity_logger
     )
 
     try:
+
         result = service.get_tracking_status()
 
     except RuntimeError as e:
+
         raise HTTPException(
             status_code=502,
             detail=str(e)
         )
+
+
+    current_status = (
+        result["status"]
+    )
+
+
+    #
+    # Only log when the tracking state changes.
+    #
+    if (
+        current_status
+        != last_tracking_status
+    ):
+
+        if activity_logger:
+
+            if current_status == "slewing":
+
+                if active_satellite_name:
+
+                    activity_logger.info(
+                        (
+                            "Satellite slew in progress: "
+                            f"{active_satellite_name}"
+                        ),
+                        source="SATELLITE"
+                    )
+
+                else:
+
+                    activity_logger.info(
+                        "Satellite slew in progress",
+                        source="SATELLITE"
+                    )
+
+
+            elif current_status == "waiting":
+
+                if active_satellite_name:
+
+                    activity_logger.info(
+                        (
+                            "Waiting for transit: "
+                            f"{active_satellite_name}"
+                        ),
+                        source="SATELLITE"
+                    )
+
+                else:
+
+                    activity_logger.info(
+                        "Waiting for satellite transit",
+                        source="SATELLITE"
+                    )
+
+
+            elif current_status == "catching":
+
+                if active_satellite_name:
+
+                    activity_logger.warning(
+                        (
+                            "Catching satellite: "
+                            f"{active_satellite_name}"
+                        ),
+                        source="SATELLITE"
+                    )
+
+                else:
+
+                    activity_logger.warning(
+                        "Catching satellite",
+                        source="SATELLITE"
+                    )
+
+
+            elif current_status == "tracking":
+
+                if active_satellite_name:
+
+                    activity_logger.success(
+                        (
+                            "Tracking satellite: "
+                            f"{active_satellite_name}"
+                        ),
+                        source="SATELLITE"
+                    )
+
+                else:
+
+                    activity_logger.success(
+                        "Satellite tracking started",
+                        source="SATELLITE"
+                    )
+
+
+            elif current_status == "ended":
+
+                if active_satellite_name:
+
+                    activity_logger.info(
+                        (
+                            "Satellite transit ended: "
+                            f"{active_satellite_name}"
+                        ),
+                        source="SATELLITE"
+                    )
+
+                else:
+
+                    activity_logger.info(
+                        "Satellite transit ended",
+                        source="SATELLITE"
+                    )
+
+
+            elif (
+                current_status == "idle"
+                and
+                last_tracking_status is not None
+            ):
+
+                activity_logger.info(
+                    "Satellite tracking idle",
+                    source="SATELLITE"
+                )
+
+
+        #
+        # Remember the state so the same
+        # message is not logged repeatedly.
+        #
+        last_tracking_status = (
+            current_status
+        )
+
 
     result["satellite_id"] = (
         active_satellite_id
@@ -267,7 +457,44 @@ def get_tracking_status(
         active_satellite_name
     )
 
+
     return {
         "success": True,
         "data": result
     }
+
+@router.post("/tracking/stop")
+def stop_satellite_tracking(
+    db: Session = Depends(get_db),
+):
+    global active_satellite_id
+    global active_satellite_name
+    global last_tracking_status
+
+    repository = SatelliteRepository(db)
+
+    service = SatelliteService(
+        repository,
+        get_mount(),
+        activity_logger
+    )
+
+    try:
+
+        result = service.stop_tracking()
+
+        active_satellite_id = None
+        active_satellite_name = None
+        last_tracking_status = None
+
+        return {
+            "success": True,
+            "data": result
+        }
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=502,
+            detail=str(e)
+        )

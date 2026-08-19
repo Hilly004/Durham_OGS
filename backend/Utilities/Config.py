@@ -6,3 +6,5 @@ dome_port = 502
 
 weather_port = ''
 weather_baudrate = 19200
+
+camera_id = "DEV_1AB2280007CD"

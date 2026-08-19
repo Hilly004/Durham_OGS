@@ -6,8 +6,9 @@ import {
 
 import {
     Search,
-    Satellite,
+    Trash2,
     Square,
+    ChevronDown,
 } from "lucide-react";
 
 import DashboardStatusCard
@@ -19,6 +20,8 @@ import {
     getCurrentJulianDate,
     listSatellites,
     stopSatelliteTracking,
+    deleteSatellite,
+    deleteAllSatellites,
 } from "../../api/satellite";
 
 import type {
@@ -40,6 +43,12 @@ export default function SatelliteControls() {
         search,
         setSearch,
     ] = useState("");
+
+
+    const [
+        searchOpen,
+        setSearchOpen,
+    ] = useState(false);
 
 
     const [
@@ -112,6 +121,11 @@ export default function SatelliteControls() {
                     "Unable to load satellites:",
                     error
                 );
+
+
+                setMessage(
+                    "Unable to load stored satellites."
+                );
             }
         }
 
@@ -122,7 +136,8 @@ export default function SatelliteControls() {
 
 
     /*
-     * Search satellites by name.
+     * Filter satellites based on
+     * the text typed into the selector.
      */
     const filteredSatellites =
         useMemo(() => {
@@ -135,26 +150,46 @@ export default function SatelliteControls() {
 
             if (!query) {
 
-                return satellites
-                    .slice(0, 8);
+                return satellites;
             }
 
 
-            return satellites
-                .filter(
-                    satellite =>
-                        satellite.name
-                            .toLowerCase()
-                            .includes(query)
-                )
-                .slice(0, 8);
+            /*
+             * If the selected satellite's
+             * name is currently in the field,
+             * show all satellites when the
+             * selector is reopened.
+             */
+            if (
+                selectedSatellite
+                &&
+                query ===
+                selectedSatellite.name
+                    .toLowerCase()
+            ) {
+
+                return satellites;
+            }
+
+
+            return satellites.filter(
+                satellite =>
+                    satellite.name
+                        .toLowerCase()
+                        .includes(query)
+            );
 
         }, [
             satellites,
             search,
+            selectedSatellite,
         ]);
 
 
+    /*
+     * Select a satellite from the
+     * search results.
+     */
     function selectSatellite(
         satellite:
             SatelliteRecord
@@ -164,9 +199,16 @@ export default function SatelliteControls() {
             satellite
         );
 
+
         setSearch(
             satellite.name
         );
+
+
+        setSearchOpen(
+            false
+        );
+
 
         setMessage(null);
         setPassStart(null);
@@ -174,6 +216,34 @@ export default function SatelliteControls() {
     }
 
 
+    /*
+     * Clear the currently selected
+     * satellite.
+     */
+    function clearSelection() {
+
+        setSelectedSatellite(
+            null
+        );
+
+
+        setSearch("");
+
+
+        setSearchOpen(
+            true
+        );
+
+
+        setMessage(null);
+        setPassStart(null);
+        setPassEnd(null);
+    }
+
+
+    /*
+     * Slew / track selected satellite.
+     */
     async function handleSlew() {
 
         if (!selectedSatellite) {
@@ -216,7 +286,7 @@ export default function SatelliteControls() {
             } else {
 
                 setMessage(
-                    "Failed to slew to satellite"
+                    "Failed to slew to satellite."
                 );
             }
 
@@ -228,8 +298,10 @@ export default function SatelliteControls() {
     }
 
 
-    async function
-    handlePrediction() {
+    /*
+     * Predict satellite pass.
+     */
+    async function handlePrediction() {
 
         if (!selectedSatellite) {
 
@@ -241,8 +313,21 @@ export default function SatelliteControls() {
         }
 
 
-        setAction("predict");
+        if (
+            predictionMinutes < 1
+            ||
+            predictionMinutes > 1440
+        ) {
 
+            setMessage(
+                "Prediction window must be between 1 and 1440 minutes."
+            );
+
+            return;
+        }
+
+
+        setAction("predict");
         setMessage(null);
 
 
@@ -261,10 +346,9 @@ export default function SatelliteControls() {
                 setPassStart(null);
                 setPassEnd(null);
 
+
                 setMessage(
-                    (
-                        "No pass found in the selected time window."
-                    )
+                    "No pass found in the selected time window."
                 );
 
                 return;
@@ -299,7 +383,7 @@ export default function SatelliteControls() {
             } else {
 
                 setMessage(
-                    "Failed to predict satellite pass"
+                    "Failed to predict satellite pass."
                 );
             }
 
@@ -311,8 +395,10 @@ export default function SatelliteControls() {
     }
 
 
-    async function
-    handleStopTracking() {
+    /*
+     * Stop satellite tracking.
+     */
+    async function handleStopTracking() {
 
         setAction("stop");
         setMessage(null);
@@ -342,7 +428,191 @@ export default function SatelliteControls() {
             } else {
 
                 setMessage(
-                    "Failed to stop satellite tracking"
+                    "Failed to stop satellite tracking."
+                );
+            }
+
+
+        } finally {
+
+            setAction(null);
+        }
+    }
+
+
+    /*
+     * Delete selected satellite.
+     */
+    async function handleDeleteSatellite() {
+
+        if (!selectedSatellite) {
+
+            setMessage(
+                "Select a satellite first."
+            );
+
+            return;
+        }
+
+
+        const satelliteName =
+            selectedSatellite.name;
+
+
+        const satelliteId =
+            selectedSatellite.id;
+
+
+        const confirmed =
+            window.confirm(
+                `Are you sure you want to delete "${satelliteName}"?\n\nThis action cannot be undone.`
+            );
+
+
+        if (!confirmed) {
+            return;
+        }
+
+
+        setAction("delete");
+        setMessage(null);
+
+
+        try {
+
+            await deleteSatellite(
+                satelliteId
+            );
+
+
+            setSatellites(
+                current =>
+                    current.filter(
+                        satellite =>
+                            satellite.id !==
+                            satelliteId
+                    )
+            );
+
+
+            setSelectedSatellite(
+                null
+            );
+
+
+            setSearch("");
+
+
+            setSearchOpen(
+                false
+            );
+
+
+            setPassStart(null);
+            setPassEnd(null);
+
+
+            setMessage(
+                `Satellite deleted: ${satelliteName}`
+            );
+
+
+        } catch (error) {
+
+            if (
+                error instanceof Error
+            ) {
+
+                setMessage(
+                    error.message
+                );
+
+            } else {
+
+                setMessage(
+                    "Failed to delete satellite."
+                );
+            }
+
+
+        } finally {
+
+            setAction(null);
+        }
+    }
+
+
+    /*
+     * Delete every stored satellite.
+     */
+    async function handleDeleteAllSatellites() {
+
+        if (satellites.length === 0) {
+
+            setMessage(
+                "There are no satellites to delete."
+            );
+
+            return;
+        }
+
+
+        const confirmed =
+            window.confirm(
+                `Are you sure you want to delete all ${satellites.length} stored satellites?\n\nThis action cannot be undone.`
+            );
+
+
+        if (!confirmed) {
+            return;
+        }
+
+
+        setAction("delete-all");
+        setMessage(null);
+
+
+        try {
+
+            const result =
+                await deleteAllSatellites();
+
+
+            setSatellites([]);
+
+            setSelectedSatellite(
+                null
+            );
+
+            setSearch("");
+
+            setSearchOpen(
+                false
+            );
+
+            setPassStart(null);
+            setPassEnd(null);
+
+
+            setMessage(
+                result.message
+            );
+
+
+        } catch (error) {
+
+            if (
+                error instanceof Error
+            ) {
+
+                setMessage(
+                    error.message
+                );
+
+            } else {
+
+                setMessage(
+                    "Failed to delete satellites."
                 );
             }
 
@@ -370,11 +640,12 @@ export default function SatelliteControls() {
                 "
             >
 
-                {/* Satellite Search */}
+                {/* Satellite Selector */}
 
                 <div>
 
                     <label
+                        htmlFor="satellite-search"
                         className="
                             mb-2
                             block
@@ -395,212 +666,429 @@ export default function SatelliteControls() {
                         "
                     >
 
-                        <Search
-                            size={16}
+                        {/* Combined Search / Dropdown */}
+
+                        <div
                             className="
-                                absolute
-                                left-3
-                                top-1/2
-                                -translate-y-1/2
-                                text-slate-500
+                                relative
                             "
-                        />
+                        >
+
+                            <Search
+                                size={16}
+
+                                className="
+                                    pointer-events-none
+                                    absolute
+                                    left-3
+                                    top-1/2
+                                    -translate-y-1/2
+                                    text-slate-500
+                                "
+                            />
 
 
-                        <input
-                            type="text"
+                            <input
+                                id="satellite-search"
 
-                            value={
-                                search
-                            }
+                                type="text"
 
-                            onChange={(
-                                event
-                            ) => {
+                                value={
+                                    search
+                                }
 
-                                setSearch(
+                                onFocus={() => {
+
+                                    setSearchOpen(
+                                        true
+                                    );
+
+                                }}
+
+                                onChange={(
                                     event
-                                        .target
-                                        .value
-                                );
+                                ) => {
 
-                                /*
-                                 * If user starts
-                                 * editing again,
-                                 * clear selection.
-                                 */
-                                if (
-                                    selectedSatellite
-                                    &&
-                                    event
-                                        .target
-                                        .value
-                                    !==
-                                    selectedSatellite
-                                        .name
-                                ) {
+                                    setSearch(
+                                        event.target.value
+                                    );
 
+
+                                    /*
+                                     * Typing changes the
+                                     * selection, so clear the
+                                     * previous selected object.
+                                     */
                                     setSelectedSatellite(
                                         null
                                     );
+
+
+                                    setSearchOpen(
+                                        true
+                                    );
+
+
+                                    setPassStart(null);
+                                    setPassEnd(null);
+                                    setMessage(null);
+                                }}
+
+                                placeholder={
+                                    satellites.length === 0
+                                        ? "No satellites stored"
+                                        : "Search or select satellite..."
                                 }
-                            }}
 
-                            placeholder="
-                                Search stored satellites...
-                            "
+                                autoComplete="off"
 
-                            className="
-                                w-full
-                                rounded-lg
-                                border
-                                border-slate-700
-                                bg-slate-800
-                                py-2.5
-                                pl-10
-                                pr-3
-                                text-sm
-                                text-slate-100
-                                outline-none
-                                transition
-                                placeholder:text-slate-600
-                                focus:border-violet-500
-                                focus:ring-2
-                                focus:ring-violet-500/20
-                            "
-                        />
+                                disabled={
+                                    loading
+                                    ||
+                                    satellites.length === 0
+                                }
+
+                                className="
+                                    w-full
+                                    rounded-lg
+                                    border
+                                    border-slate-700
+                                    bg-slate-800
+                                    py-2.5
+                                    pl-10
+                                    pr-10
+                                    text-sm
+                                    text-slate-100
+                                    outline-none
+                                    transition
+                                    placeholder:text-slate-600
+                                    focus:border-violet-500
+                                    focus:ring-2
+                                    focus:ring-violet-500/20
+                                    disabled:cursor-not-allowed
+                                    disabled:opacity-50
+                                "
+                            />
+
+
+                            <button
+                                type="button"
+
+                                aria-label={
+                                    searchOpen
+                                        ? "Close satellite list"
+                                        : "Open satellite list"
+                                }
+
+                                disabled={
+                                    loading
+                                    ||
+                                    satellites.length === 0
+                                }
+
+                                onClick={() => {
+
+                                    setSearchOpen(
+                                        current =>
+                                            !current
+                                    );
+
+                                }}
+
+                                className="
+                                    absolute
+                                    right-2
+                                    top-1/2
+                                    flex
+                                    -translate-y-1/2
+                                    items-center
+                                    justify-center
+                                    rounded
+                                    p-1
+                                    text-slate-500
+                                    transition
+                                    hover:bg-slate-700
+                                    hover:text-slate-200
+                                    disabled:cursor-not-allowed
+                                "
+                            >
+
+                                <ChevronDown
+                                    size={17}
+
+                                    className={
+                                        searchOpen
+                                            ? "rotate-180 transition-transform"
+                                            : "transition-transform"
+                                    }
+                                />
+
+                            </button>
+
+                        </div>
+
+
+                        {/* Search Results */}
+
+                        {
+                            searchOpen
+                            &&
+                            satellites.length > 0
+                            &&
+                            (
+
+                                <div
+                                    className="
+                                        absolute
+                                        z-50
+                                        mt-1
+                                        max-h-60
+                                        w-full
+                                        overflow-y-auto
+                                        rounded-lg
+                                        border
+                                        border-slate-700
+                                        bg-slate-900
+                                        shadow-xl
+                                    "
+                                >
+
+                                    {
+                                        filteredSatellites
+                                            .length > 0
+                                            ? (
+
+                                                filteredSatellites
+                                                    .map(
+                                                        satellite => (
+
+                                                            <button
+                                                                key={
+                                                                    satellite.id
+                                                                }
+
+                                                                type="button"
+
+                                                                onMouseDown={(
+                                                                    event
+                                                                ) => {
+
+                                                                    /*
+                                                                     * Prevent input
+                                                                     * from losing focus
+                                                                     * before click.
+                                                                     */
+                                                                    event
+                                                                        .preventDefault();
+
+                                                                }}
+
+                                                                onClick={() => {
+
+                                                                    selectSatellite(
+                                                                        satellite
+                                                                    );
+
+                                                                }}
+
+                                                                className="
+                                                                    block
+                                                                    w-full
+                                                                    border-b
+                                                                    border-slate-800
+                                                                    px-3
+                                                                    py-2.5
+                                                                    text-left
+                                                                    text-sm
+                                                                    text-slate-200
+                                                                    transition
+                                                                    last:border-b-0
+                                                                    hover:bg-violet-500/10
+                                                                    hover:text-violet-300
+                                                                "
+                                                            >
+
+                                                                {
+                                                                    satellite.name
+                                                                }
+
+                                                            </button>
+
+                                                        )
+                                                    )
+
+                                            )
+                                            : (
+
+                                                <div
+                                                    className="
+                                                        px-3
+                                                        py-3
+                                                        text-sm
+                                                        text-slate-500
+                                                    "
+                                                >
+                                                    No matching satellites
+                                                </div>
+
+                                            )
+                                    }
+
+                                </div>
+
+                            )
+                        }
 
                     </div>
 
 
-                    {/* Search Results */}
+                    {/* Satellite count */}
 
-                    {!selectedSatellite && (
+                    {
+                        satellites.length > 0
+                        &&
+                        (
 
-                        <div
+                            <p
+                                className="
+                                    mt-2
+                                    text-xs
+                                    text-slate-500
+                                "
+                            >
+
+                                {
+                                    selectedSatellite
+                                        ? `${satellites.length} stored satellites`
+                                        : search.trim()
+                                            ? `${filteredSatellites.length} of ${satellites.length} satellites shown`
+                                            : `${satellites.length} stored satellites`
+                                }
+
+                            </p>
+
+                        )
+                    }
+
+
+                    {/* Delete Controls */}
+
+                    <div
+                        className="
+                            mt-3
+                            grid
+                            grid-cols-2
+                            gap-3
+                        "
+                    >
+
+                        <button
+                            type="button"
+
+                            onClick={
+                                handleDeleteSatellite
+                            }
+
+                            disabled={
+                                loading
+                                ||
+                                !selectedSatellite
+                            }
+
                             className="
-                                mt-2
-                                overflow-hidden
+                                flex
+                                items-center
+                                justify-center
+                                gap-2
                                 rounded-lg
                                 border
-                                border-slate-800
-                                bg-slate-950/70
+                                border-red-500/30
+                                bg-red-500/10
+                                px-3
+                                py-2
+                                text-sm
+                                font-medium
+                                text-red-300
+                                transition
+                                hover:bg-red-500/20
+                                disabled:cursor-not-allowed
+                                disabled:opacity-50
                             "
                         >
 
+                            <Trash2
+                                size={15}
+                            />
+
                             {
-                                filteredSatellites
-                                    .length > 0
-                                    ? (
-
-                                        filteredSatellites
-                                            .map(
-                                                satellite => (
-
-                                                    <button
-                                                        key={
-                                                            satellite.id
-                                                        }
-
-                                                        type="button"
-
-                                                        onClick={() =>
-                                                            selectSatellite(
-                                                                satellite
-                                                            )
-                                                        }
-
-                                                        className="
-                                                            flex
-                                                            w-full
-                                                            items-center
-                                                            justify-between
-                                                            border-b
-                                                            border-slate-800
-                                                            px-3
-                                                            py-2.5
-                                                            text-left
-                                                            transition
-                                                            last:border-b-0
-                                                            hover:bg-violet-500/10
-                                                        "
-                                                    >
-
-                                                        <div
-                                                            className="
-                                                                flex
-                                                                items-center
-                                                                gap-2
-                                                            "
-                                                        >
-
-                                                            <Satellite
-                                                                size={15}
-                                                                className="
-                                                                    text-violet-400
-                                                                "
-                                                            />
-
-
-                                                            <span
-                                                                className="
-                                                                    text-sm
-                                                                    text-slate-300
-                                                                "
-                                                            >
-                                                                {
-                                                                    satellite
-                                                                        .name
-                                                                }
-                                                            </span>
-
-                                                        </div>
-
-
-                                                        <span
-                                                            className="
-                                                                font-mono
-                                                                text-xs
-                                                                text-slate-600
-                                                            "
-                                                        >
-                                                            ID {
-                                                                satellite.id
-                                                            }
-                                                        </span>
-
-                                                    </button>
-                                                )
-                                            )
-
-                                    ) : (
-
-                                        <div
-                                            className="
-                                                px-3
-                                                py-3
-                                                text-sm
-                                                text-slate-500
-                                            "
-                                        >
-                                            No matching satellites.
-                                        </div>
-
-                                    )
+                                action === "delete"
+                                    ? "Deleting..."
+                                    : "Delete Selected"
                             }
 
-                        </div>
-
-                    )}
+                        </button>
 
 
-                    {/* Selected */}
+                        <button
+                            type="button"
 
-                    {selectedSatellite && (
+                            onClick={
+                                handleDeleteAllSatellites
+                            }
+
+                            disabled={
+                                loading
+                                ||
+                                satellites.length === 0
+                            }
+
+                            className="
+                                flex
+                                items-center
+                                justify-center
+                                gap-2
+                                rounded-lg
+                                border
+                                border-red-500/40
+                                bg-red-500/15
+                                px-3
+                                py-2
+                                text-sm
+                                font-medium
+                                text-red-300
+                                transition
+                                hover:bg-red-500/25
+                                disabled:cursor-not-allowed
+                                disabled:opacity-50
+                            "
+                        >
+
+                            <Trash2
+                                size={15}
+                            />
+
+                            {
+                                action === "delete-all"
+                                    ? "Deleting..."
+                                    : "Delete All"
+                            }
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+
+                {/* Selected Satellite */}
+
+                {
+                    selectedSatellite
+                    &&
+                    (
 
                         <div
                             className="
-                                mt-2
                                 flex
                                 items-center
                                 justify-between
@@ -624,6 +1112,7 @@ export default function SatelliteControls() {
                                     Selected
                                 </p>
 
+
                                 <p
                                     className="
                                         text-sm
@@ -631,10 +1120,11 @@ export default function SatelliteControls() {
                                         text-violet-300
                                     "
                                 >
+
                                     {
-                                        selectedSatellite
-                                            .name
+                                        selectedSatellite.name
                                     }
+
                                 </p>
 
                             </div>
@@ -643,20 +1133,21 @@ export default function SatelliteControls() {
                             <button
                                 type="button"
 
-                                onClick={() => {
+                                onClick={
+                                    clearSelection
+                                }
 
-                                    setSelectedSatellite(
-                                        null
-                                    );
-
-                                    setSearch("");
-                                }}
+                                disabled={
+                                    loading
+                                }
 
                                 className="
                                     text-xs
                                     text-slate-500
                                     transition
                                     hover:text-slate-200
+                                    disabled:cursor-not-allowed
+                                    disabled:opacity-50
                                 "
                             >
                                 Change
@@ -664,9 +1155,8 @@ export default function SatelliteControls() {
 
                         </div>
 
-                    )}
-
-                </div>
+                    )
+                }
 
 
                 {/* Prediction */}
@@ -674,6 +1164,7 @@ export default function SatelliteControls() {
                 <div>
 
                     <label
+                        htmlFor="prediction-minutes"
                         className="
                             mb-2
                             block
@@ -697,7 +1188,10 @@ export default function SatelliteControls() {
                     >
 
                         <input
+                            id="prediction-minutes"
+
                             type="number"
+
                             min="1"
                             max="1440"
 
@@ -707,14 +1201,20 @@ export default function SatelliteControls() {
 
                             onChange={(
                                 event
-                            ) =>
+                            ) => {
+
                                 setPredictionMinutes(
                                     Number(
                                         event
                                             .target
                                             .value
                                     )
-                                )
+                                );
+
+                            }}
+
+                            disabled={
+                                loading
                             }
 
                             className="
@@ -730,6 +1230,8 @@ export default function SatelliteControls() {
                                 focus:border-violet-500
                                 focus:ring-2
                                 focus:ring-violet-500/20
+                                disabled:cursor-not-allowed
+                                disabled:opacity-50
                             "
                         />
 
@@ -787,12 +1289,13 @@ export default function SatelliteControls() {
                             disabled:opacity-50
                         "
                     >
+
                         {
-                            action ===
-                            "predict"
+                            action === "predict"
                                 ? "Predicting..."
                                 : "Predict Pass"
                         }
+
                     </button>
 
 
@@ -823,12 +1326,13 @@ export default function SatelliteControls() {
                             disabled:opacity-50
                         "
                     >
+
                         {
-                            action ===
-                            "slew"
+                            action === "slew"
                                 ? "Starting..."
                                 : "Track Satellite"
                         }
+
                     </button>
 
                 </div>
@@ -873,6 +1377,7 @@ export default function SatelliteControls() {
                         size={14}
                     />
 
+
                     {
                         action === "stop"
                             ? "Stopping..."
@@ -884,129 +1389,141 @@ export default function SatelliteControls() {
 
                 {/* Pass Result */}
 
-                {(
-                    passStart !== null
-                    ||
-                    passEnd !== null
-                ) && (
-
-                    <div
-                        className="
-                            rounded-lg
-                            border
-                            border-slate-700
-                            bg-slate-800/50
-                            p-4
-                        "
-                    >
-
-                        <p
-                            className="
-                                mb-3
-                                text-xs
-                                font-medium
-                                uppercase
-                                tracking-wide
-                                text-slate-500
-                            "
-                        >
-                            Predicted Pass
-                        </p>
-
+                {
+                    (
+                        passStart !== null
+                        ||
+                        passEnd !== null
+                    )
+                    &&
+                    (
 
                         <div
                             className="
-                                grid
-                                grid-cols-2
-                                gap-4
-                                text-sm
+                                rounded-lg
+                                border
+                                border-slate-700
+                                bg-slate-800/50
+                                p-4
                             "
                         >
 
-                            <div>
-
-                                <p
-                                    className="
-                                        text-slate-500
-                                    "
-                                >
-                                    Start JD
-                                </p>
-
-
-                                <p
-                                    className="
-                                        mt-1
-                                        font-mono
-                                        text-slate-200
-                                    "
-                                >
-                                    {
-                                        passStart
-                                            ?.toFixed(
-                                                6
-                                            )
-                                    }
-                                </p>
-
-                            </div>
+                            <p
+                                className="
+                                    mb-3
+                                    text-xs
+                                    font-medium
+                                    uppercase
+                                    tracking-wide
+                                    text-slate-500
+                                "
+                            >
+                                Predicted Pass
+                            </p>
 
 
-                            <div>
+                            <div
+                                className="
+                                    grid
+                                    grid-cols-2
+                                    gap-4
+                                    text-sm
+                                "
+                            >
 
-                                <p
-                                    className="
-                                        text-slate-500
-                                    "
-                                >
-                                    End JD
-                                </p>
+                                <div>
+
+                                    <p
+                                        className="
+                                            text-slate-500
+                                        "
+                                    >
+                                        Start JD
+                                    </p>
 
 
-                                <p
-                                    className="
-                                        mt-1
-                                        font-mono
-                                        text-slate-200
-                                    "
-                                >
-                                    {
-                                        passEnd
-                                            ?.toFixed(
-                                                6
-                                            )
-                                    }
-                                </p>
+                                    <p
+                                        className="
+                                            mt-1
+                                            font-mono
+                                            text-slate-200
+                                        "
+                                    >
+
+                                        {
+                                            passStart
+                                                ?.toFixed(
+                                                    6
+                                                )
+                                        }
+
+                                    </p>
+
+                                </div>
+
+
+                                <div>
+
+                                    <p
+                                        className="
+                                            text-slate-500
+                                        "
+                                    >
+                                        End JD
+                                    </p>
+
+
+                                    <p
+                                        className="
+                                            mt-1
+                                            font-mono
+                                            text-slate-200
+                                        "
+                                    >
+
+                                        {
+                                            passEnd
+                                                ?.toFixed(
+                                                    6
+                                                )
+                                        }
+
+                                    </p>
+
+                                </div>
 
                             </div>
 
                         </div>
 
-                    </div>
-
-                )}
+                    )
+                }
 
 
                 {/* Feedback */}
 
-                {message && (
+                {
+                    message
+                    &&
+                    (
 
-                    <div
-                        className="
-                            rounded-lg
-                            border
-                            border-slate-700
-                            bg-slate-800
-                            px-3
-                            py-2
-                            text-sm
-                            text-slate-300
-                        "
-                    >
-                        {message}
-                    </div>
+                        <div
+                            className="
+                                rounded-lg
+                                border
+                                border-slate-700
+                                bg-slate-800
+                                px-3
+                                py-2
+                                text-sm
+                                text-slate-300
+                            "
+                        >
+                            {message}
+                        </div>
 
-                )}
+                    )
+                }
 
             </div>
 

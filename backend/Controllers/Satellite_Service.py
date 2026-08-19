@@ -7,29 +7,108 @@ class SatelliteService:
     def __init__(
         self,
         repository,
-        mount
+        mount,
+        logger=None
     ):
+
         self.repository = repository
         self.mount = mount
-        self.tle_parser = TLEParser()
+        self.logger = logger
 
+        self.tle_parser = (
+            TLEParser()
+        )
+        self._last_tracking_status = None
+
+
+    # =========================================================
+    # Logging helpers
+    # =========================================================
+
+    def _info(
+        self,
+        message: str
+    ):
+
+        if self.logger:
+
+            self.logger.info(
+                message,
+                source="SATELLITE"
+            )
+
+
+    def _success(
+        self,
+        message: str
+    ):
+
+        if self.logger:
+
+            self.logger.success(
+                message,
+                source="SATELLITE"
+            )
+
+
+    def _warning(
+        self,
+        message: str
+    ):
+
+        if self.logger:
+
+            self.logger.warning(
+                message,
+                source="SATELLITE"
+            )
+
+
+    def _error(
+        self,
+        message: str
+    ):
+
+        if self.logger:
+
+            self.logger.error(
+                message,
+                source="SATELLITE"
+            )
+
+
+    # =========================================================
+    # Satellite database
+    #
+    # list/get are deliberately not logged because they may be
+    # called frequently by the frontend.
+    # =========================================================
 
     def list_satellites(self):
-        return self.repository.get_all()
+
+        return (
+            self.repository
+            .get_all()
+        )
 
 
     def get_satellite(
         self,
         satellite_id: int
     ):
+
         satellite = (
-            self.repository.get_by_id(
+            self.repository
+            .get_by_id(
                 satellite_id
             )
         )
 
+
         if satellite is None:
+
             return None
+
 
         return satellite
 
@@ -40,46 +119,116 @@ class SatelliteService:
     ):
 
         existing = (
-            self.repository.get_by_name(
+            self.repository
+            .get_by_name(
                 satellite_data.name
             )
         )
 
+
         if existing is not None:
+
+            self._warning(
+                (
+                    "Satellite upload rejected: "
+                    f"{satellite_data.name} "
+                    "already exists"
+                )
+            )
+
             raise ValueError(
-                "Satellite with this name already exists"
+                (
+                    "Satellite with this name "
+                    "already exists"
+                )
             )
 
 
         existing_tle = (
-            self.repository.get_by_tle(
+            self.repository
+            .get_by_tle(
                 satellite_data.tle_line1,
                 satellite_data.tle_line2
             )
         )
 
+
         if existing_tle is not None:
+
+            self._warning(
+                (
+                    "Satellite upload rejected: "
+                    "TLE already stored"
+                )
+            )
+
             raise ValueError(
                 "This TLE is already stored"
             )
 
 
-        self.tle_parser.validate(
-            satellite_data.tle_line1,
-            satellite_data.tle_line2
-        )
+        try:
+
+            self.tle_parser.validate(
+                satellite_data.tle_line1,
+                satellite_data.tle_line2
+            )
+
+
+        except Exception as e:
+
+            self._error(
+                (
+                    "TLE validation failed for "
+                    f"{satellite_data.name}: "
+                    f"{e}"
+                )
+            )
+
+            raise
 
 
         satellite = Satellite(
             name=satellite_data.name,
-            tle_line1=satellite_data.tle_line1,
-            tle_line2=satellite_data.tle_line2
+            tle_line1=
+                satellite_data.tle_line1,
+            tle_line2=
+                satellite_data.tle_line2
         )
 
 
-        return self.repository.create(
-            satellite
-        )
+        try:
+
+            created = (
+                self.repository
+                .create(
+                    satellite
+                )
+            )
+
+
+            self._success(
+                (
+                    "Satellite stored: "
+                    f"{created.name}"
+                )
+            )
+
+
+            return created
+
+
+        except Exception as e:
+
+            self._error(
+                (
+                    "Failed to store satellite "
+                    f"{satellite_data.name}: "
+                    f"{e}"
+                )
+            )
+
+            raise
 
 
     def delete_satellite(
@@ -88,21 +237,103 @@ class SatelliteService:
     ):
 
         satellite = (
-            self.repository.get_by_id(
+            self.repository
+            .get_by_id(
                 satellite_id
             )
         )
 
+
         if satellite is None:
+
             return False
 
 
-        self.repository.delete_satellite(
-            satellite
+        satellite_name = (
+            satellite.name
         )
 
-        return True
 
+        try:
+
+            self.repository.delete_satellite(
+                satellite
+            )
+
+
+            self._info(
+                (
+                    "Satellite deleted: "
+                    f"{satellite_name}"
+                )
+            )
+
+
+            return True
+
+
+        except Exception as e:
+
+            self._error(
+                (
+                    "Failed to delete satellite "
+                    f"{satellite_name}: "
+                    f"{e}"
+                )
+            )
+
+            raise
+
+
+    def delete_all_satellites(self):
+
+        try:
+
+            deleted_count = (
+                self.repository
+                .delete_all_satellites()
+            )
+
+
+            if deleted_count == 0:
+
+                self._info(
+                    (
+                        "Delete all requested but "
+                        "no satellites were stored"
+                    )
+                )
+
+
+            else:
+
+                self._warning(
+                    (
+                        f"Deleted {deleted_count} "
+                        "stored satellite"
+                        f"{'' if deleted_count == 1 else 's'}"
+                    )
+                )
+
+
+            return deleted_count
+
+
+        except Exception as e:
+
+            self._error(
+                (
+                    "Failed to delete all "
+                    f"satellites: {e}"
+                )
+            )
+
+            raise
+
+
+    # =========================================================
+    # Pass prediction
+    # =========================================================
 
     def predict_pass(
         self,
@@ -112,13 +343,30 @@ class SatelliteService:
     ):
 
         satellite = (
-            self.repository.get_by_id(
+            self.repository
+            .get_by_id(
                 satellite_id
             )
         )
 
+
         if satellite is None:
+
             return None
+
+
+        satellite_name = (
+            satellite.name
+        )
+
+
+        self._info(
+            (
+                "Predicting pass for "
+                f"{satellite_name} "
+                f"over {minutes} minutes"
+            )
+        )
 
 
         tle_data = (
@@ -129,128 +377,284 @@ class SatelliteService:
         )
 
 
-        load_result = (
-            self.mount.write_storage(
-                tle_data
-            )
-        )
+        try:
 
-
-        if load_result != "V#":
-            raise RuntimeError(
-                f"Mount rejected TLE: {load_result}"
-            )
-
-
-        result = (
-            self.mount
-            .precalculate_satellite_transit(
-                jd,
-                minutes
-            )
-        )
-
-
-        if result == "E#":
-            raise RuntimeError(
-                "Mount could not calculate satellite transit"
-            )
-
-
-        if result == "N#":
-            return {
-                "found": False,
-                "start_jd": None,
-                "end_jd": None,
-                "flags": None
-            }
-
-
-        clean_result = (
-            result.rstrip("#")
-        )
-
-        parts = (
-            clean_result.split(",")
-        )
-
-
-        if len(parts) != 3:
-            raise RuntimeError(
-                (
-                    "Unexpected transit response "
-                    f"from mount: {result}"
+            load_result = (
+                self.mount
+                .write_storage(
+                    tle_data
                 )
             )
 
 
-        return {
-            "found": True,
-            "start_jd":
-                float(parts[0]),
+            if load_result != "V#":
 
-            "end_jd":
-                float(parts[1]),
+                self._error(
+                    (
+                        "Mount rejected TLE for "
+                        f"{satellite_name}: "
+                        f"{load_result}"
+                    )
+                )
 
-            "flags":
-                parts[2]
-        }
+                raise RuntimeError(
+                    (
+                        "Mount rejected TLE: "
+                        f"{load_result}"
+                    )
+                )
 
+
+            result = (
+                self.mount
+                .precalculate_satellite_transit(
+                    jd,
+                    minutes
+                )
+            )
+
+
+            if result == "E#":
+
+                self._error(
+                    (
+                        "Mount could not calculate "
+                        "satellite transit for "
+                        f"{satellite_name}"
+                    )
+                )
+
+                raise RuntimeError(
+                    (
+                        "Mount could not calculate "
+                        "satellite transit"
+                    )
+                )
+
+
+            if result == "N#":
+
+                self._info(
+                    (
+                        "No pass found for "
+                        f"{satellite_name} "
+                        f"within {minutes} minutes"
+                    )
+                )
+
+                return {
+                    "found": False,
+                    "start_jd": None,
+                    "end_jd": None,
+                    "flags": None
+                }
+
+
+            clean_result = (
+                result.rstrip("#")
+            )
+
+
+            parts = (
+                clean_result.split(",")
+            )
+
+
+            if len(parts) != 3:
+
+                self._error(
+                    (
+                        "Unexpected transit response "
+                        f"for {satellite_name}: "
+                        f"{result}"
+                    )
+                )
+
+                raise RuntimeError(
+                    (
+                        "Unexpected transit response "
+                        f"from mount: {result}"
+                    )
+                )
+
+
+            prediction = {
+                "found": True,
+
+                "start_jd":
+                    float(parts[0]),
+
+                "end_jd":
+                    float(parts[1]),
+
+                "flags":
+                    parts[2]
+            }
+
+
+            self._success(
+                (
+                    "Pass found for "
+                    f"{satellite_name}"
+                )
+            )
+
+
+            return prediction
+
+
+        except RuntimeError:
+
+            raise
+
+
+        except Exception as e:
+
+            self._error(
+                (
+                    "Pass prediction failed for "
+                    f"{satellite_name}: "
+                    f"{e}"
+                )
+            )
+
+            raise
+
+
+    # =========================================================
+    # Satellite slew / tracking
+    # =========================================================
 
     def slew_to_satellite(self):
 
-        result = (
-            self.mount
-            .slew_to_satellite_transit()
-        )
+        try:
 
-
-        if result == "V#":
-            return {
-                "status": "slewing",
-                "message":
-                    "Slewing to satellite transit start"
-            }
-
-
-        if result == "S#":
-            return {
-                "status": "catching",
-                "message":
-                    "Transit already started; catching satellite"
-            }
-
-
-        if result == "F#":
-            raise RuntimeError(
-                "Mount failed to slew to satellite"
+            result = (
+                self.mount
+                .slew_to_satellite_transit()
             )
 
 
-        if result == "E#":
-            raise RuntimeError(
+            if result == "V#":
+
+                self._success(
+                    (
+                        "Satellite slew started; "
+                        "moving to transit start"
+                    )
+                )
+
+                return {
+                    "status": "slewing",
+                    "message":
+                        (
+                            "Slewing to satellite "
+                            "transit start"
+                        )
+                }
+
+
+            if result == "S#":
+
+                self._warning(
+                    (
+                        "Satellite transit already "
+                        "started; attempting catch-up"
+                    )
+                )
+
+                return {
+                    "status": "catching",
+                    "message":
+                        (
+                            "Transit already started; "
+                            "catching satellite"
+                        )
+                }
+
+
+            if result == "F#":
+
+                self._error(
+                    (
+                        "Mount failed to slew "
+                        "to satellite"
+                    )
+                )
+
+                raise RuntimeError(
+                    (
+                        "Mount failed to slew "
+                        "to satellite"
+                    )
+                )
+
+
+            if result == "E#":
+
+                self._error(
+                    (
+                        "Satellite slew requested "
+                        "without a precalculated transit"
+                    )
+                )
+
+                raise RuntimeError(
+                    (
+                        "No satellite transit "
+                        "has been precalculated"
+                    )
+                )
+
+
+            if result == "Q#":
+
+                self._warning(
+                    (
+                        "Satellite slew rejected: "
+                        "transit has already ended"
+                    )
+                )
+
+                raise RuntimeError(
+                    (
+                        "Satellite transit "
+                        "has already ended"
+                    )
+                )
+
+
+            self._error(
                 (
-                    "No satellite transit "
-                    "has been precalculated"
+                    "Unexpected satellite slew "
+                    f"response: {result}"
                 )
             )
 
 
-        if result == "Q#":
             raise RuntimeError(
                 (
-                    "Satellite transit "
-                    "has already ended"
+                    "Unexpected satellite "
+                    f"slew response: {result}"
                 )
             )
 
 
-        raise RuntimeError(
-            (
-                "Unexpected satellite "
-                f"slew response: {result}"
+        except RuntimeError:
+
+            raise
+
+
+        except Exception as e:
+
+            self._error(
+                (
+                    "Satellite slew failed: "
+                    f"{e}"
+                )
             )
-        )
+
+            raise
 
 
     def stop_tracking(self):
@@ -263,14 +667,42 @@ class SatelliteService:
             :STOP#
         """
 
-        self.mount.stop_all_motion()
+        try:
 
-        return {
-            "status": "idle",
-            "message":
+            self.mount.stop_all_motion()
+
+
+            self._info(
                 "Satellite tracking stopped"
-        }
+            )
 
+
+            return {
+                "status": "idle",
+                "message":
+                    "Satellite tracking stopped"
+            }
+
+
+        except Exception as e:
+
+            self._error(
+                (
+                    "Failed to stop satellite "
+                    f"tracking: {e}"
+                )
+            )
+
+            raise
+
+
+    # =========================================================
+    # Tracking status
+    #
+    # IMPORTANT:
+    # Do not log this method. It is polled by the frontend and
+    # would otherwise flood the Activity Log.
+    # =========================================================
 
     def get_tracking_status(self):
 
@@ -291,11 +723,14 @@ class SatelliteService:
 
 
         status = (
-            status_map.get(result)
+            status_map.get(
+                result
+            )
         )
 
 
         if status is None:
+
             raise RuntimeError(
                 (
                     "Unexpected satellite "
@@ -306,6 +741,7 @@ class SatelliteService:
 
         return {
             "status": status,
+
             "tracking":
                 result == "T#"
         }
