@@ -47,6 +47,9 @@ interface TrackingStatus {
         number | null;
 }
 
+type CoordinateMode =
+    | "altaz"
+    | "radec";
 
 export default function SatelliteTrackingStatusWidget() {
 
@@ -54,6 +57,9 @@ export default function SatelliteTrackingStatusWidget() {
         useState<TrackingStatus | null>(
             null
         );
+
+    const [mode, setMode] =
+        useState<CoordinateMode>("altaz");
 
 
     useEffect(() => {
@@ -112,10 +118,10 @@ export default function SatelliteTrackingStatusWidget() {
                         tracking.tracking,
 
                     satelliteId:
-                        tracking.satellite_id,
+                        tracking.satellite_id ?? null,
 
                     satelliteName:
-                        tracking.satellite_name,
+                        tracking.satellite_name ?? null,
 
                     altitude:
                         altAz?.alt ?? null,
@@ -319,108 +325,125 @@ export default function SatelliteTrackingStatusWidget() {
                 </div>
 
 
-                {/* Alt / Az */}
-                <div>
+                {/* Coordinate Toggle */}
+                <div
+                    className="
+                        grid
+                        grid-cols-2
+                        rounded-lg
+                        bg-slate-950/60
+                        p-1
+                    "
+                >
 
-                    <p
-                        className="
-                            mb-2
-                            text-[10px]
-                            font-semibold
-                            uppercase
-                            tracking-widest
-                            text-slate-500
-                        "
+                    <button
+                        type="button"
+                        onClick={() =>
+                            setMode("altaz")
+                        }
+                        className={`
+                            rounded-md
+                            px-2
+                            py-1.5
+                            text-xs
+                            font-medium
+                            transition
+
+                            ${
+                                mode === "altaz"
+                                    ? "bg-violet-500/15 text-violet-300"
+                                    : "text-slate-500 hover:text-slate-300"
+                            }
+                        `}
                     >
                         Alt / Az
-                    </p>
+                    </button>
 
 
-                    <div
-                        className="
-                            grid
-                            grid-cols-2
-                            gap-3
-                        "
+                    <button
+                        type="button"
+                        onClick={() =>
+                            setMode("radec")
+                        }
+                        className={`
+                            rounded-md
+                            px-2
+                            py-1.5
+                            text-xs
+                            font-medium
+                            transition
+
+                            ${
+                                mode === "radec"
+                                    ? "bg-violet-500/15 text-violet-300"
+                                    : "text-slate-500 hover:text-slate-300"
+                            }
+                        `}
                     >
-
-                        <StatusValue
-                            label="Altitude"
-                            value={
-                                status?.altitude !==
-                                null &&
-                                status?.altitude !==
-                                undefined
-                                    ? `${status.altitude.toFixed(2)}°`
-                                    : "—"
-                            }
-                        />
-
-
-                        <StatusValue
-                            label="Azimuth"
-                            value={
-                                status?.azimuth !==
-                                null &&
-                                status?.azimuth !==
-                                undefined
-                                    ? `${status.azimuth.toFixed(2)}°`
-                                    : "—"
-                            }
-                        />
-
-                    </div>
+                        RA / Dec
+                    </button>
 
                 </div>
 
 
-                {/* RA / DEC */}
-                <div>
+                {/* Coordinate Values */}
+                <div
+                    className="
+                        grid
+                        grid-cols-2
+                        gap-3
+                    "
+                >
 
-                    <p
-                        className="
-                            mb-2
-                            text-[10px]
-                            font-semibold
-                            uppercase
-                            tracking-widest
-                            text-slate-500
-                        "
-                    >
-                        RA / DEC
-                    </p>
+                    {mode === "altaz" ? (
+                        <>
+                            <StatusValue
+                                label="Altitude"
+                                value={
+                                    status?.altitude !==
+                                        null &&
+                                    status?.altitude !==
+                                        undefined
+                                        ? `${status.altitude.toFixed(2)}°`
+                                        : "—"
+                                }
+                            />
 
+                            <StatusValue
+                                label="Azimuth"
+                                value={
+                                    status?.azimuth !==
+                                        null &&
+                                    status?.azimuth !==
+                                        undefined
+                                        ? `${status.azimuth.toFixed(2)}°`
+                                        : "—"
+                                }
+                            />
+                        </>
+                    ) : (
+                        <>
+                            <StatusValue
+                                label="Right Ascension"
+                                value={
+                                    status?.ra !== null &&
+                                    status?.ra !== undefined
+                                        ? `${status.ra.toFixed(4)} h`
+                                        : "—"
+                                }
+                            />
 
-                    <div
-                        className="
-                            grid
-                            grid-cols-2
-                            gap-3
-                        "
-                    >
-
-                        <StatusValue
-                            label="RA"
-                            value={
-                                status?.ra !== null &&
-                                status?.ra !== undefined
-                                    ? `${status.ra.toFixed(4)} h`
-                                    : "—"
-                            }
-                        />
-
-
-                        <StatusValue
-                            label="DEC"
-                            value={
-                                status?.dec !== null &&
-                                status?.dec !== undefined
-                                    ? `${status.dec.toFixed(4)}°`
-                                    : "—"
-                            }
-                        />
-
-                    </div>
+                            <StatusValue
+                                label="Declination"
+                                value={
+                                    status?.dec !== null &&
+                                    status?.dec !== undefined
+                                        ? `${status.dec.toFixed(4)}°`
+                                        : "—"
+                                }
+                            />
+                        </>
+                    )}
 
                 </div>
 

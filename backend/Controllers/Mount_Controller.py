@@ -1,9 +1,32 @@
 class MountController:
 
-    def __init__(self, mount, logger):
+    def __init__(
+        self,
+        mount,
+        logger
+    ):
 
         self.logger = logger
         self.mount = mount
+
+
+    # ============================================================
+    # Formatting / parsing helpers
+    # ============================================================
+
+    def _clean_response(
+        self,
+        value
+    ) -> str:
+
+        if value is None:
+            return ""
+
+        return (
+            str(value)
+            .strip()
+            .rstrip("#")
+        )
 
 
     def _parse_angle(
@@ -11,13 +34,22 @@ class MountController:
         value: str
     ) -> float:
 
-        value = value.strip().rstrip('#')
+        value = (
+            value
+            .strip()
+            .rstrip("#")
+        )
 
-        value = value.replace('*', ':')
+        value = value.replace(
+            "*",
+            ":"
+        )
 
-        parts = value.split(':')
+        parts = value.split(":")
 
-        degrees = float(parts[0])
+        degrees = float(
+            parts[0]
+        )
 
         sign = (
             -1
@@ -25,7 +57,9 @@ class MountController:
             else 1
         )
 
-        degrees = abs(degrees)
+        degrees = abs(
+            degrees
+        )
 
         minutes = (
             float(parts[1])
@@ -39,10 +73,17 @@ class MountController:
             else 0
         )
 
-        return sign * (
-            degrees
-            + minutes / 60
-            + seconds / 3600
+
+        return (
+            sign
+            *
+            (
+                degrees
+                +
+                minutes / 60
+                +
+                seconds / 3600
+            )
         )
 
 
@@ -54,12 +95,14 @@ class MountController:
         value = (
             value
             .strip()
-            .rstrip('#')
+            .rstrip("#")
         )
 
-        parts = value.split(':')
+        parts = value.split(":")
 
-        hours = float(parts[0])
+        hours = float(
+            parts[0]
+        )
 
         minutes = (
             float(parts[1])
@@ -73,10 +116,13 @@ class MountController:
             else 0
         )
 
+
         return (
             hours
-            + minutes / 60
-            + seconds / 3600
+            +
+            minutes / 60
+            +
+            seconds / 3600
         )
 
 
@@ -105,6 +151,7 @@ class MountController:
             minutes_float - minutes
         ) * 60
 
+
         return (
             f"{hours:02d}:"
             f"{minutes:02d}:"
@@ -118,9 +165,9 @@ class MountController:
     ) -> str:
 
         sign = (
-            '+'
+            "+"
             if dec_degrees >= 0
-            else '-'
+            else "-"
         )
 
         dec_degrees = abs(
@@ -143,6 +190,7 @@ class MountController:
             minutes_float - minutes
         ) * 60
 
+
         return (
             f"{sign}"
             f"{degrees:02d}*"
@@ -151,9 +199,64 @@ class MountController:
         )
 
 
-    # =========================================================
+    def _format_longitude(
+        self,
+        longitude: float
+    ) -> str:
+        """
+        Application longitude uses the normal convention:
+
+            East  = positive
+            West  = negative
+
+        TenMicron uses the opposite sign convention
+        for longitude, so invert it before sending.
+        """
+
+        mount_longitude = (
+            -longitude
+        )
+
+        sign = (
+            "+"
+            if mount_longitude >= 0
+            else "-"
+        )
+
+        value = abs(
+            mount_longitude
+        )
+
+        degrees = int(
+            value
+        )
+
+        minutes_float = (
+            value - degrees
+        ) * 60
+
+        minutes = int(
+            minutes_float
+        )
+
+        seconds = (
+            minutes_float
+            -
+            minutes
+        ) * 60
+
+
+        return (
+            f"{sign}"
+            f"{degrees:03d}*"
+            f"{minutes:02d}:"
+            f"{seconds:04.1f}"
+        )
+
+
+    # ============================================================
     # Connection
-    # =========================================================
+    # ============================================================
 
     def connect(self):
 
@@ -163,7 +266,7 @@ class MountController:
 
             self.logger.success(
                 "Mount connected",
-                source="MOUNT"
+                source="MOUNT",
             )
 
             return True
@@ -176,7 +279,7 @@ class MountController:
                     "Mount connection failed: "
                     f"{e}"
                 ),
-                source="MOUNT"
+                source="MOUNT",
             )
 
             return False
@@ -190,7 +293,7 @@ class MountController:
 
             self.logger.info(
                 "Mount disconnected",
-                source="MOUNT"
+                source="MOUNT",
             )
 
             return True
@@ -203,7 +306,7 @@ class MountController:
                     "Mount disconnect failed: "
                     f"{e}"
                 ),
-                source="MOUNT"
+                source="MOUNT",
             )
 
             return False
@@ -216,225 +319,59 @@ class MountController:
         )
 
 
-    # =========================================================
+    # ============================================================
     # Manual movement
-    # =========================================================
+    # ============================================================
 
     def move_north(self):
 
-        try:
-
-            self.mount.move_north()
-
-            self.logger.info(
-                "Mount moving north",
-                source="MOUNT"
-            )
-
-
-        except Exception as e:
-
-            self.logger.error(
-                (
-                    "Failed to move mount north: "
-                    f"{e}"
-                ),
-                source="MOUNT"
-            )
-
-            raise
+        self.mount.move_north()
 
 
     def stop_north(self):
 
-        try:
-
-            self.mount.stop_north()
-
-            self.logger.info(
-                "Mount north movement stopped",
-                source="MOUNT"
-            )
-
-
-        except Exception as e:
-
-            self.logger.error(
-                (
-                    "Failed to stop north movement: "
-                    f"{e}"
-                ),
-                source="MOUNT"
-            )
-
-            raise
+        self.mount.stop_north()
 
 
     def move_south(self):
 
-        try:
-
-            self.mount.move_south()
-
-            self.logger.info(
-                "Mount moving south",
-                source="MOUNT"
-            )
-
-
-        except Exception as e:
-
-            self.logger.error(
-                (
-                    "Failed to move mount south: "
-                    f"{e}"
-                ),
-                source="MOUNT"
-            )
-
-            raise
+        self.mount.move_south()
 
 
     def stop_south(self):
 
-        try:
-
-            self.mount.stop_south()
-
-            self.logger.info(
-                "Mount south movement stopped",
-                source="MOUNT"
-            )
-
-
-        except Exception as e:
-
-            self.logger.error(
-                (
-                    "Failed to stop south movement: "
-                    f"{e}"
-                ),
-                source="MOUNT"
-            )
-
-            raise
+        self.mount.stop_south()
 
 
     def move_west(self):
 
-        try:
-
-            self.mount.move_west()
-
-            self.logger.info(
-                "Mount moving west",
-                source="MOUNT"
-            )
-
-
-        except Exception as e:
-
-            self.logger.error(
-                (
-                    "Failed to move mount west: "
-                    f"{e}"
-                ),
-                source="MOUNT"
-            )
-
-            raise
+        self.mount.move_west()
 
 
     def stop_west(self):
 
-        try:
-
-            self.mount.stop_west()
-
-            self.logger.info(
-                "Mount west movement stopped",
-                source="MOUNT"
-            )
-
-
-        except Exception as e:
-
-            self.logger.error(
-                (
-                    "Failed to stop west movement: "
-                    f"{e}"
-                ),
-                source="MOUNT"
-            )
-
-            raise
+        self.mount.stop_west()
 
 
     def move_east(self):
 
-        try:
-
-            self.mount.move_east()
-
-            self.logger.info(
-                "Mount moving east",
-                source="MOUNT"
-            )
-
-
-        except Exception as e:
-
-            self.logger.error(
-                (
-                    "Failed to move mount east: "
-                    f"{e}"
-                ),
-                source="MOUNT"
-            )
-
-            raise
+        self.mount.move_east()
 
 
     def stop_east(self):
 
-        try:
-
-            self.mount.stop_east()
-
-            self.logger.info(
-                "Mount east movement stopped",
-                source="MOUNT"
-            )
+        self.mount.stop_east()
 
 
-        except Exception as e:
-
-            self.logger.error(
-                (
-                    "Failed to stop east movement: "
-                    f"{e}"
-                ),
-                source="MOUNT"
-            )
-
-            raise
-
-
-    # =========================================================
+    # ============================================================
     # Nudge
-    # =========================================================
+    # ============================================================
 
     def nudge(
         self,
         direction: str,
         step_arcsec: int
     ):
-        """
-        Nudge the mount by a fixed angular offset.
-
-        step_arcsec:
-            Offset in arcseconds.
-        """
 
         if not self.mount.is_connected():
 
@@ -451,8 +388,8 @@ class MountController:
 
             raise ValueError(
                 (
-                    "Nudge step must be between "
-                    "1 and 3600 arcseconds"
+                    "Nudge step must be "
+                    "between 1 and 3600 arcseconds"
                 )
             )
 
@@ -496,185 +433,84 @@ class MountController:
             )
 
 
-        try:
-
-            response = (
-                self.mount.nudge_offset(
-                    ra_offset,
-                    dec_offset
-                )
+        response = (
+            self.mount.nudge_offset(
+                ra_offset,
+                dec_offset
             )
+        )
 
 
-            if response not in (
-                "0",
-                "0#",
-            ):
-
-                self.logger.error(
-                    (
-                        f"Mount nudge {direction} "
-                        f"rejected: {response}"
-                    ),
-                    source="MOUNT"
-                )
-
-                raise RuntimeError(
-                    (
-                        "Mount rejected nudge: "
-                        f"{response}"
-                    )
-                )
+        self.logger.info(
+            (
+                f"Mount nudge {direction}: "
+                f"{step_arcsec} arcsec "
+                f"(response: {response})"
+            ),
+            source="MOUNT",
+        )
 
 
-            self.logger.success(
+        if response not in (
+            "0",
+            "0#",
+        ):
+
+            raise RuntimeError(
                 (
-                    f"Mount nudged {direction}: "
-                    f"{step_arcsec} arcsec"
-                ),
-                source="MOUNT"
+                    "Mount rejected nudge: "
+                    f"{response}"
+                )
             )
 
 
-            return True
+        return True
 
 
-        except RuntimeError:
-
-            raise
-
-
-        except Exception as e:
-
-            self.logger.error(
-                (
-                    f"Mount nudge {direction} "
-                    f"failed: {e}"
-                ),
-                source="MOUNT"
-            )
-
-            raise
-
-
-    # =========================================================
+    # ============================================================
     # Slewing / tracking
-    # =========================================================
+    # ============================================================
 
     def slew_to_target(self):
 
-        try:
-
-            result = (
-                self.mount.slew_to_target()
-            )
-
-            self.logger.success(
-                "Mount slew command sent",
-                source="MOUNT"
-            )
-
-            return result
-
-
-        except Exception as e:
-
-            self.logger.error(
-                (
-                    "Mount slew failed: "
-                    f"{e}"
-                ),
-                source="MOUNT"
-            )
-
-            raise
+        return (
+            self.mount.slew_to_target()
+        )
 
 
     def stop_motion(self):
 
-        try:
-
-            result = (
-                self.mount.stop_all_motion()
-            )
-
-            self.logger.warning(
-                "Mount motion stopped",
-                source="MOUNT"
-            )
-
-            return result
-
-
-        except Exception as e:
-
-            self.logger.error(
-                (
-                    "Failed to stop mount motion: "
-                    f"{e}"
-                ),
-                source="MOUNT"
-            )
-
-            raise
+        return (
+            self.mount.stop_all_motion()
+        )
 
 
     def start_tracking(self):
 
-        try:
+        result = (
+            self.mount.start_tracking()
+        )
 
-            result = (
-                self.mount.start_tracking()
-            )
+        self.logger.info(
+            "Mount tracking started",
+            source="MOUNT",
+        )
 
-            self.logger.success(
-                "Mount tracking started",
-                source="MOUNT"
-            )
-
-            return result
-
-
-        except Exception as e:
-
-            self.logger.error(
-                (
-                    "Failed to start mount tracking: "
-                    f"{e}"
-                ),
-                source="MOUNT"
-            )
-
-            raise
+        return result
 
 
     def stop_tracking(self):
 
-        try:
+        result = (
+            self.mount.stop_tracking()
+        )
 
-            result = (
-                self.mount.stop_tracking()
-            )
+        self.logger.info(
+            "Mount tracking stopped",
+            source="MOUNT",
+        )
 
-            self.logger.info(
-                "Mount tracking stopped",
-                source="MOUNT"
-            )
-
-            return result
-
-
-        except Exception as e:
-
-            self.logger.error(
-                (
-                    "Failed to stop mount tracking: "
-                    f"{e}"
-                ),
-                source="MOUNT"
-            )
-
-            raise
+        return result
 
 
     def slew_to_ra_dec(
@@ -683,18 +519,29 @@ class MountController:
         dec: float
     ):
 
+        if not self.mount.is_connected():
+
+            raise ConnectionError(
+                "Mount not connected"
+            )
+
+
         ra_string = (
-            self._format_ra(ra)
+            self._format_ra(
+                ra
+            )
         )
 
         dec_string = (
-            self._format_dec(dec)
+            self._format_dec(
+                dec
+            )
         )
 
 
         self.logger.info(
             (
-                "RA/Dec slew requested: "
+                "Mount slew requested: "
                 f"RA={ra_string}, "
                 f"Dec={dec_string}"
             ),
@@ -702,116 +549,126 @@ class MountController:
         )
 
 
-        try:
-
-            ra_result = (
-                self.mount.set_target_ra(
-                    ra_string
-                )
+        #
+        # Set RA
+        #
+        ra_result = (
+            self.mount.set_target_ra(
+                ra_string
             )
+        )
 
 
-            if (
-                str(ra_result)
-                .strip('#')
-                != '1'
-            ):
-
-                self.logger.error(
-                    (
-                        "Mount rejected target RA "
-                        f"{ra_string}: "
-                        f"{ra_result}"
-                    ),
-                    source="MOUNT"
-                )
-
-                return False
+        self.logger.info(
+            (
+                "Set target RA response: "
+                f"{ra_result}"
+            ),
+            source="MOUNT"
+        )
 
 
-            dec_result = (
-                self.mount
-                .set_target_declination(
-                    dec_string
-                )
-            )
+        if (
+            str(ra_result)
+            .strip()
+            .strip("#")
+            != "1"
+        ):
 
-
-            if (
-                str(dec_result)
-                .strip('#')
-                != '1'
-            ):
-
-                self.logger.error(
-                    (
-                        "Mount rejected target Dec "
-                        f"{dec_string}: "
-                        f"{dec_result}"
-                    ),
-                    source="MOUNT"
-                )
-
-                return False
-
-
-            result = (
-                self.mount.slew_to_target()
-            )
-
-
-            success = (
-                str(result)
-                .strip('#')
-                == '0'
-            )
-
-
-            if success:
-
-                self.logger.success(
-                    (
-                        "Mount slew started: "
-                        f"RA={ra_string}, "
-                        f"Dec={dec_string}"
-                    ),
-                    source="MOUNT"
-                )
-
-
-            else:
-
-                self.logger.error(
-                    (
-                        "Mount rejected slew command: "
-                        f"{result}"
-                    ),
-                    source="MOUNT"
-                )
-
-
-            return success
-
-
-        except Exception as e:
-
-            self.logger.error(
+            raise RuntimeError(
                 (
-                    "RA/Dec slew failed: "
-                    f"{e}"
+                    "Mount rejected target RA "
+                    f"{ra_string}. "
+                    f"Response: {ra_result}"
+                )
+            )
+
+
+        #
+        # Set Dec
+        #
+        dec_result = (
+            self.mount
+            .set_target_declination(
+                dec_string
+            )
+        )
+
+
+        self.logger.info(
+            (
+                "Set target Dec response: "
+                f"{dec_result}"
+            ),
+            source="MOUNT"
+        )
+
+
+        if (
+            str(dec_result)
+            .strip()
+            .strip("#")
+            != "1"
+        ):
+
+            raise RuntimeError(
+                (
+                    "Mount rejected target Dec "
+                    f"{dec_string}. "
+                    f"Response: {dec_result}"
+                )
+            )
+
+
+        #
+        # Start slew
+        #
+        result = (
+            self.mount.slew_to_target()
+        )
+
+
+        self.logger.info(
+            (
+                "Mount slew response: "
+                f"{result}"
+            ),
+            source="MOUNT"
+        )
+
+
+        clean_result = (
+            str(result)
+            .strip()
+            .strip("#")
+        )
+
+
+        if clean_result == "0":
+
+            self.logger.success(
+                (
+                    "Mount slew started: "
+                    f"RA={ra_string}, "
+                    f"Dec={dec_string}"
                 ),
                 source="MOUNT"
             )
 
-            raise
+            return True
 
 
-    # =========================================================
-    # Getters
-    #
-    # Deliberately not logged because these may be polled
-    # continuously by the frontend.
-    # =========================================================
+        raise RuntimeError(
+            (
+                "Mount rejected slew command. "
+                f"Response: {result}"
+            )
+        )
+
+
+    # ============================================================
+    # Position getters
+    # ============================================================
 
     def get_ra(self):
 
@@ -820,8 +677,10 @@ class MountController:
             .get_telescope_ra()
         )
 
-        return self._parse_ra(
-            value
+        return (
+            self._parse_ra(
+                value
+            )
         )
 
 
@@ -832,16 +691,21 @@ class MountController:
             .get_telescope_dec()
         )
 
-        return self._parse_angle(
-            value
+        return (
+            self._parse_angle(
+                value
+            )
         )
 
 
     def get_ra_dec(self):
 
         return {
-            'ra': self.get_ra(),
-            'dec': self.get_dec()
+            "ra":
+                self.get_ra(),
+
+            "dec":
+                self.get_dec(),
         }
 
 
@@ -852,8 +716,10 @@ class MountController:
             .get_telescope_altitude()
         )
 
-        return self._parse_angle(
-            value
+        return (
+            self._parse_angle(
+                value
+            )
         )
 
 
@@ -864,16 +730,21 @@ class MountController:
             .get_telescope_azimuth()
         )
 
-        return self._parse_angle(
-            value
+        return (
+            self._parse_angle(
+                value
+            )
         )
 
 
     def get_alt_az(self):
 
         return {
-            'alt': self.get_alt(),
-            'az': self.get_az()
+            "alt":
+                self.get_alt(),
+
+            "az":
+                self.get_az(),
         }
 
 
@@ -904,26 +775,26 @@ class MountController:
     def update_position(self):
 
         return {
-            'ra':
+            "ra":
                 self.mount
                 .get_telescope_ra(),
 
-            'dec':
+            "dec":
                 self.mount
-                .get_telescope_dec()
+                .get_telescope_dec(),
         }
 
 
     def update_position_aa(self):
 
         return {
-            'alt':
+            "alt":
                 self.mount
                 .get_telescope_altitude(),
 
-            'az':
+            "az":
                 self.mount
-                .get_telescope_azimuth()
+                .get_telescope_azimuth(),
         }
 
 
@@ -932,18 +803,19 @@ class MountController:
         field = (
             self.mount
             .get_info()
-            .split(',')
+            .split(",")
         )
 
+
         return {
-            'ra': field[0],
-            'dec': field[1],
-            'dir': field[2],
-            'az': field[3],
-            'alt': field[4],
-            'jul': field[5],
-            'stat': field[6],
-            'slew_stat': field[7]
+            "ra": field[0],
+            "dec": field[1],
+            "dir": field[2],
+            "az": field[3],
+            "alt": field[4],
+            "jul": field[5],
+            "stat": field[6],
+            "slew_stat": field[7],
         }
 
 
@@ -958,77 +830,45 @@ class MountController:
         if not self.mount.is_connected():
 
             return {
-                'connected': False,
-                'data': None
+                "connected": False,
+                "data": None,
             }
 
 
         return {
-            'connected': True,
-            'data': None
+            "connected": True,
+            "data": None,
         }
 
 
-    # =========================================================
-    # Home / Park
-    # =========================================================
+    # ============================================================
+    # Home & park
+    # ============================================================
 
     def slew_to_park(self):
 
-        try:
+        self.logger.info(
+            "Mount parking",
+            source="MOUNT",
+        )
 
-            result = (
-                self.mount.slew_to_park()
-            )
-
-            self.logger.info(
-                "Mount parking",
-                source="MOUNT"
-            )
-
-            return result
-
-
-        except Exception as e:
-
-            self.logger.error(
-                (
-                    "Mount park failed: "
-                    f"{e}"
-                ),
-                source="MOUNT"
-            )
-
-            raise
+        return (
+            self.mount.slew_to_park()
+        )
 
 
     def set_park_position(self):
 
-        try:
+        result = (
+            self.mount.set_park()
+        )
 
-            result = (
-                self.mount.set_park()
-            )
+        self.logger.success(
+            "Mount park position set",
+            source="MOUNT",
+        )
 
-            self.logger.success(
-                "Mount park position set",
-                source="MOUNT"
-            )
-
-            return result
-
-
-        except Exception as e:
-
-            self.logger.error(
-                (
-                    "Failed to set park position: "
-                    f"{e}"
-                ),
-                source="MOUNT"
-            )
-
-            raise
+        return result
 
 
     def unpark(self):
@@ -1040,29 +880,16 @@ class MountController:
             )
 
 
-        try:
-
-            self.mount.unpark()
-
-            self.logger.success(
-                "Mount unpark command sent",
-                source="MOUNT"
-            )
-
-            return True
+        self.mount.unpark()
 
 
-        except Exception as e:
+        self.logger.success(
+            "Mount unpark command sent",
+            source="MOUNT",
+        )
 
-            self.logger.error(
-                (
-                    "Mount unpark failed: "
-                    f"{e}"
-                ),
-                source="MOUNT"
-            )
 
-            raise
+        return True
 
 
     def get_home_status(self):
@@ -1073,122 +900,81 @@ class MountController:
         )
 
 
-    # =========================================================
-    # Set target
-    # =========================================================
+    def seek_home_and_store(self):
 
-    def set_target_dec(
-        self,
-        dec
-    ):
+        if not self.mount.is_connected():
 
-        try:
-
-            result = (
-                self.mount
-                .set_target_declination(
-                    dec
-                )
+            raise ConnectionError(
+                "Mount not connected"
             )
 
-            self.logger.info(
-                (
-                    "Mount target Dec set: "
-                    f"{dec}"
-                ),
-                source="MOUNT"
+
+        self.logger.info(
+            "Mount home search started",
+            source="MOUNT",
+        )
+
+
+        return (
+            self.mount
+            .seek_home_and_store()
+        )
+
+
+    def seek_home_and_align(self):
+
+        if not self.mount.is_connected():
+
+            raise ConnectionError(
+                "Mount not connected"
             )
 
-            return result
+
+        self.logger.warning(
+            (
+                "Mount home search and "
+                "alignment started"
+            ),
+            source="MOUNT",
+        )
 
 
-        except Exception as e:
-
-            self.logger.error(
-                (
-                    "Failed to set target Dec: "
-                    f"{e}"
-                ),
-                source="MOUNT"
-            )
-
-            raise
+        return (
+            self.mount
+            .seek_home_and_align()
+        )
 
 
-    def set_target_ra(
-        self,
-        ra
-    ):
+    # ============================================================
+    # Target setters
+    # ============================================================
 
-        try:
-
-            result = (
-                self.mount
-                .set_target_ra(
-                    ra
-                )
-            )
-
-            self.logger.info(
-                (
-                    "Mount target RA set: "
-                    f"{ra}"
-                ),
-                source="MOUNT"
-            )
-
-            return result
+    def set_target_declination(self, dec):
+        message = ':Sd' + str(dec) + '#'
+        return self.query(
+            message,
+            terminator=None
+        )
 
 
-        except Exception as e:
-
-            self.logger.error(
-                (
-                    "Failed to set target RA: "
-                    f"{e}"
-                ),
-                source="MOUNT"
-            )
-
-            raise
-
+    def set_target_ra(self, ra):
+        message = ':Sr' + str(ra) + '#'
+        return self.query(
+            message,
+            terminator=None
+        )
 
     def set_target_azimuth(
         self,
         az
-    ):
+        ):
 
-        try:
-
-            result = (
-                self.mount
-                .set_target_azimuth(
-                    az
-                )
+        return (
+            self.mount
+            .set_target_azimuth(
+                az
             )
-
-            self.logger.info(
-                (
-                    "Mount target azimuth set: "
-                    f"{az}"
-                ),
-                source="MOUNT"
-            )
-
-            return result
-
-
-        except Exception as e:
-
-            self.logger.error(
-                (
-                    "Failed to set target azimuth: "
-                    f"{e}"
-                ),
-                source="MOUNT"
-            )
-
-            raise
+        )
 
 
     def set_target_altitude(
@@ -1196,79 +982,29 @@ class MountController:
         alt
     ):
 
-        try:
-
-            result = (
-                self.mount
-                .set_target_altitude(
-                    alt
-                )
+        return (
+            self.mount
+            .set_target_altitude(
+                alt
             )
-
-            self.logger.info(
-                (
-                    "Mount target altitude set: "
-                    f"{alt}"
-                ),
-                source="MOUNT"
-            )
-
-            return result
+        )
 
 
-        except Exception as e:
-
-            self.logger.error(
-                (
-                    "Failed to set target altitude: "
-                    f"{e}"
-                ),
-                source="MOUNT"
-            )
-
-            raise
-
-
-    # =========================================================
-    # Site coordinates
-    # =========================================================
+    # ============================================================
+    # Site configuration
+    # ============================================================
 
     def set_site_lat(
         self,
         lat
     ):
 
-        try:
-
-            result = (
-                self.mount
-                .set_site_latitude(
-                    lat
-                )
+        return (
+            self.mount
+            .set_site_latitude(
+                lat
             )
-
-            self.logger.info(
-                (
-                    "Mount site latitude set: "
-                    f"{lat}"
-                ),
-                source="MOUNT"
-            )
-
-            return result
-
-
-        except Exception as e:
-
-            self.logger.error(
-                (
-                    "Failed to set site latitude: "
-                    f"{e}"
-                ),
-                source="MOUNT"
-            )
-
-            raise
+        )
 
 
     def set_site_long(
@@ -1276,66 +1012,991 @@ class MountController:
         long
     ):
 
-        try:
+        return (
+            self.mount
+            .set_site_longitude(
+                long
+            )
+        )
 
-            result = (
-                self.mount
-                .set_site_longitude(
-                    long
+
+    def get_site_configuration(self):
+
+        if not self.mount.is_connected():
+
+            raise ConnectionError(
+                "Mount not connected"
+            )
+
+
+        latitude_raw = (
+            self.mount
+            .get_site_latitude()
+        )
+
+        longitude_raw = (
+            self.mount
+            .get_site_longitude()
+        )
+
+        elevation_raw = (
+            self.mount
+            .get_site_elevation()
+        )
+
+
+        latitude = (
+            self._parse_angle(
+                latitude_raw
+            )
+        )
+
+
+        # TenMicron longitude uses opposite
+        # sign convention to normal geographic
+        # longitude.
+        longitude = (
+            -self._parse_angle(
+                longitude_raw
+            )
+        )
+
+
+        elevation = float(
+            self._clean_response(
+                elevation_raw
+            )
+        )
+
+
+        return {
+            "latitude":
+                latitude,
+
+            "longitude":
+                longitude,
+
+            "elevation_m":
+                elevation,
+        }
+
+
+    def set_site_configuration(
+        self,
+        latitude: float,
+        longitude: float,
+        elevation_m: float
+    ):
+
+        if not self.mount.is_connected():
+
+            raise ConnectionError(
+                "Mount not connected"
+            )
+
+
+        latitude_string = (
+            self._format_dec(
+                latitude
+            )
+        )
+
+
+        longitude_string = (
+            self._format_longitude(
+                longitude
+            )
+        )
+
+
+        elevation_string = (
+            f"{elevation_m:+.1f}"
+        )
+
+
+        latitude_result = (
+            self.mount
+            .set_site_latitude(
+                latitude_string
+            )
+        )
+
+
+        if (
+            self._clean_response(
+                latitude_result
+            )
+            != "1"
+        ):
+
+            raise RuntimeError(
+                (
+                    "Mount rejected site latitude: "
+                    f"{latitude_result}"
                 )
             )
 
-            self.logger.info(
+
+        longitude_result = (
+            self.mount
+            .set_site_longitude(
+                longitude_string
+            )
+        )
+
+
+        if (
+            self._clean_response(
+                longitude_result
+            )
+            != "1"
+        ):
+
+            raise RuntimeError(
                 (
-                    "Mount site longitude set: "
-                    f"{long}"
-                ),
-                source="MOUNT"
+                    "Mount rejected site longitude: "
+                    f"{longitude_result}"
+                )
             )
 
-            return result
+
+        elevation_result = (
+            self.mount
+            .set_site_elevation(
+                elevation_string
+            )
+        )
 
 
-        except Exception as e:
+        if (
+            self._clean_response(
+                elevation_result
+            )
+            != "1"
+        ):
 
-            self.logger.error(
+            raise RuntimeError(
                 (
-                    "Failed to set site longitude: "
-                    f"{e}"
-                ),
-                source="MOUNT"
+                    "Mount rejected site elevation: "
+                    f"{elevation_result}"
+                )
             )
 
-            raise
+
+        self.logger.success(
+            (
+                "Mount site configured: "
+                f"lat={latitude:.6f}, "
+                f"lon={longitude:.6f}, "
+                f"elevation={elevation_m:.1f}m"
+            ),
+            source="MOUNT",
+        )
 
 
-    # =========================================================
+        return {
+            "latitude":
+                latitude,
+
+            "longitude":
+                longitude,
+
+            "elevation_m":
+                elevation_m,
+        }
+
+
+    # ============================================================
+    # Time
+    # ============================================================
+
+    def get_mount_utc_datetime(self):
+
+        if not self.mount.is_connected():
+
+            raise ConnectionError(
+                "Mount not connected"
+            )
+
+
+        return (
+            self._clean_response(
+                self.mount
+                .get_utc_datetime()
+            )
+        )
+
+
+    def set_mount_utc_datetime(
+        self,
+        date_string: str,
+        time_string: str
+    ):
+
+        if not self.mount.is_connected():
+
+            raise ConnectionError(
+                "Mount not connected"
+            )
+
+
+        result = (
+            self.mount
+            .set_utc_datetime(
+                date_string,
+                time_string
+            )
+        )
+
+
+        if (
+            self._clean_response(
+                result
+            )
+            != "1"
+        ):
+
+            raise RuntimeError(
+                (
+                    "Mount rejected UTC datetime: "
+                    f"{result}"
+                )
+            )
+
+
+        self.logger.success(
+            (
+                "Mount UTC clock synchronised: "
+                f"{date_string} {time_string}"
+            ),
+            source="MOUNT",
+        )
+
+
+        return True
+
+
+    # ============================================================
+    # Mount information
+    # ============================================================
+
+    def get_mount_information(self):
+
+        if not self.mount.is_connected():
+
+            raise ConnectionError(
+                "Mount not connected"
+            )
+
+
+        return {
+            "product":
+                self._clean_response(
+                    self.mount
+                    .get_product_name()
+                ),
+
+            "firmware":
+                self._clean_response(
+                    self.mount
+                    .get_firmware_number()
+                ),
+
+            "firmware_date":
+                self._clean_response(
+                    self.mount
+                    .get_firmware_date()
+                ),
+
+            "control_box":
+                self._clean_response(
+                    self.mount
+                    .get_control_box_version()
+                ),
+
+            "connection_type":
+                self._clean_response(
+                    self.mount
+                    .get_connection_type()
+                ),
+
+            "mount_ip":
+                self._clean_response(
+                    self.mount
+                    .get_ip_address()
+                ),
+        }
+
+
+    # ============================================================
+    # Alignment model
+    # ============================================================
+
+    def get_alignment(self):
+
+        if not self.mount.is_connected():
+
+            raise ConnectionError(
+                "Mount not connected"
+            )
+
+
+        count_response = (
+            self.mount
+            .get_alignment_star_count()
+        )
+
+
+        count_string = (
+            self._clean_response(
+                count_response
+            )
+        )
+
+
+        try:
+
+            star_count = int(
+                count_string
+                or
+                "0"
+            )
+
+        except ValueError:
+
+            raise RuntimeError(
+                (
+                    "Unexpected alignment star "
+                    f"count: {count_response}"
+                )
+            )
+
+
+        stars = []
+
+
+        for index in range(
+            1,
+            star_count + 1
+        ):
+
+            response = (
+                self.mount
+                .get_alignment_star_info_polar(
+                    index
+                )
+            )
+
+
+            clean = (
+                self._clean_response(
+                    response
+                )
+            )
+
+
+            if clean == "E":
+                continue
+
+
+            parts = clean.split(",")
+
+
+            if len(parts) < 3:
+                continue
+
+
+            try:
+
+                error_arcsec = float(
+                    parts[2]
+                )
+
+            except ValueError:
+
+                error_arcsec = 0.0
+
+
+            polar_angle = None
+
+
+            if len(parts) >= 4:
+
+                try:
+
+                    polar_angle = float(
+                        parts[3]
+                    )
+
+                except ValueError:
+
+                    polar_angle = None
+
+
+            stars.append(
+                {
+                    "index":
+                        index,
+
+                    "hour_angle":
+                        parts[0],
+
+                    "declination":
+                        parts[1],
+
+                    "error_arcsec":
+                        error_arcsec,
+
+                    "polar_angle":
+                        polar_angle,
+                }
+            )
+
+
+        model = None
+
+
+        if star_count >= 2:
+
+            model_response = (
+                self.mount
+                .get_alignment_model_info()
+            )
+
+
+            clean_model = (
+                self._clean_response(
+                    model_response
+                )
+            )
+
+
+            if (
+                clean_model
+                and
+                clean_model != "E"
+            ):
+
+                parts = (
+                    clean_model.split(",")
+                )
+
+
+                if len(parts) >= 9:
+
+                    def number(
+                        value
+                    ):
+
+                        try:
+                            return float(value)
+
+                        except ValueError:
+                            return None
+
+
+                    model = {
+                        "azimuth":
+                            number(parts[0]),
+
+                        "altitude":
+                            number(parts[1]),
+
+                        "polar_error":
+                            number(parts[2]),
+
+                        "position_angle":
+                            number(parts[3]),
+
+                        "orthogonality_error":
+                            number(parts[4]),
+
+                        "azimuth_adjustment_turns":
+                            number(parts[5]),
+
+                        "altitude_adjustment_turns":
+                            number(parts[6]),
+
+                        "terms":
+                            (
+                                int(parts[7])
+                                if parts[7]
+                                    .lstrip("+-")
+                                    .isdigit()
+                                else None
+                            ),
+
+                        "expected_rms_arcsec":
+                            number(parts[8]),
+                    }
+
+
+        return {
+            "star_count":
+                star_count,
+
+            "model":
+                model,
+
+            "stars":
+                stars,
+        }
+
+
+    def add_alignment_point(
+        self,
+        ra_hours: float,
+        dec_degrees: float,
+        name: str = "Alignment star"
+    ):
+
+        if not self.mount.is_connected():
+
+            raise ConnectionError(
+                "Mount not connected"
+            )
+
+
+        ra_string = (
+            self._format_ra(
+                ra_hours
+            )
+        )
+
+        dec_string = (
+            self._format_dec(
+                dec_degrees
+            )
+        )
+
+
+        # Ensure the mount's selected target
+        # contains the known coordinates.
+        ra_result = (
+            self.mount
+            .set_target_ra(
+                ra_string
+            )
+        )
+
+
+        if (
+            self._clean_response(
+                ra_result
+            )
+            != "1"
+        ):
+
+            raise RuntimeError(
+                (
+                    "Mount rejected alignment "
+                    f"RA: {ra_result}"
+                )
+            )
+
+
+        dec_result = (
+            self.mount
+            .set_target_declination(
+                dec_string
+            )
+        )
+
+
+        if (
+            self._clean_response(
+                dec_result
+            )
+            != "1"
+        ):
+
+            raise RuntimeError(
+                (
+                    "Mount rejected alignment "
+                    f"Dec: {dec_result}"
+                )
+            )
+
+
+        # Mode 1 tells TenMicron that syncs
+        # are used to refine the alignment
+        # model.
+        sync_mode_result = (
+            self.mount
+            .set_sync_config(
+                1
+            )
+        )
+
+
+        if (
+            self._clean_response(
+                sync_mode_result
+            )
+            != "1"
+        ):
+
+            raise RuntimeError(
+                (
+                    "Unable to enable alignment "
+                    f"sync mode: {sync_mode_result}"
+                )
+            )
+
+
+        result = (
+            self.mount
+            .sync_add_alignment_point()
+        )
+
+
+        if (
+            self._clean_response(
+                result
+            )
+            != "V"
+        ):
+
+            raise RuntimeError(
+                (
+                    "Mount could not add "
+                    "alignment point: "
+                    f"{result}"
+                )
+            )
+
+
+        self.logger.success(
+            (
+                "Alignment point added: "
+                f"{name} "
+                f"(RA {ra_string}, "
+                f"Dec {dec_string})"
+            ),
+            source="MOUNT",
+        )
+
+
+        return {
+            "name":
+                name,
+
+            "ra":
+                ra_string,
+
+            "dec":
+                dec_string,
+
+            "response":
+                result,
+        }
+
+
+    def delete_alignment_point(
+        self,
+        index: int
+    ):
+
+        if not self.mount.is_connected():
+
+            raise ConnectionError(
+                "Mount not connected"
+            )
+
+
+        result = (
+            self.mount
+            .delete_alignment_star(
+                index
+            )
+        )
+
+
+        success = (
+            self._clean_response(
+                result
+            )
+            == "1"
+        )
+
+
+        if success:
+
+            self.logger.warning(
+                (
+                    "Alignment point deleted: "
+                    f"{index}"
+                ),
+                source="MOUNT",
+            )
+
+
+        return success
+
+
+    def delete_alignment_model(self):
+
+        if not self.mount.is_connected():
+
+            raise ConnectionError(
+                "Mount not connected"
+            )
+
+
+        result = (
+            self.mount
+            .delete_alignment_model()
+        )
+
+
+        self.logger.warning(
+            (
+                "Active mount alignment "
+                "model deleted"
+            ),
+            source="MOUNT",
+        )
+
+
+        return result
+
+
+    # ============================================================
+    # Saved TenMicron models
+    # ============================================================
+
+    def get_saved_models(self):
+
+        if not self.mount.is_connected():
+
+            raise ConnectionError(
+                "Mount not connected"
+            )
+
+
+        response = (
+            self.mount
+            .get_model_count()
+        )
+
+
+        try:
+
+            count = int(
+                self._clean_response(
+                    response
+                )
+                or
+                "0"
+            )
+
+        except ValueError:
+
+            raise RuntimeError(
+                (
+                    "Unexpected saved model "
+                    f"count: {response}"
+                )
+            )
+
+
+        models = []
+
+
+        for index in range(
+            1,
+            count + 1
+        ):
+
+            name = (
+                self._clean_response(
+                    self.mount
+                    .get_model_name(
+                        index
+                    )
+                )
+            )
+
+
+            if name:
+
+                models.append(
+                    name
+                )
+
+
+        return models
+
+
+    def save_alignment_model(
+        self,
+        name: str
+    ):
+
+        if not self.mount.is_connected():
+
+            raise ConnectionError(
+                "Mount not connected"
+            )
+
+
+        name = name.strip()
+
+
+        if not name:
+
+            raise ValueError(
+                "Model name cannot be empty"
+            )
+
+
+        if len(name) > 15:
+
+            raise ValueError(
+                (
+                    "TenMicron model names "
+                    "are limited to 15 characters"
+                )
+            )
+
+
+        result = (
+            self.mount.save_model(
+                name
+            )
+        )
+
+
+        success = (
+            self._clean_response(
+                result
+            )
+            == "1"
+        )
+
+
+        if success:
+
+            self.logger.success(
+                (
+                    "Alignment model saved: "
+                    f"{name}"
+                ),
+                source="MOUNT",
+            )
+
+
+        return success
+
+
+    def load_alignment_model(
+        self,
+        name: str
+    ):
+
+        if not self.mount.is_connected():
+
+            raise ConnectionError(
+                "Mount not connected"
+            )
+
+
+        result = (
+            self.mount.load_model(
+                name
+            )
+        )
+
+
+        success = (
+            self._clean_response(
+                result
+            )
+            == "1"
+        )
+
+
+        if success:
+
+            self.logger.success(
+                (
+                    "Alignment model loaded: "
+                    f"{name}"
+                ),
+                source="MOUNT",
+            )
+
+
+        return success
+
+
+    def delete_saved_model(
+        self,
+        name: str
+    ):
+
+        if not self.mount.is_connected():
+
+            raise ConnectionError(
+                "Mount not connected"
+            )
+
+
+        result = (
+            self.mount.delete_model(
+                name
+            )
+        )
+
+
+        success = (
+            self._clean_response(
+                result
+            )
+            == "1"
+        )
+
+
+        if success:
+
+            self.logger.warning(
+                (
+                    "Saved alignment model "
+                    f"deleted: {name}"
+                ),
+                source="MOUNT",
+            )
+
+
+        return success
+
+
+    # ============================================================
     # Target getters
-    #
-    # Not logged because these may also be polled.
-    # =========================================================
+    # ============================================================
 
     def get_target_ra(self):
 
         return (
-            self.mount
-            .get_target_ra()
+            self.mount.get_target_ra()
         )
 
 
     def get_target_dec(self):
 
         return (
-            self.mount
-            .get_target_dec()
+            self.mount.get_target_dec()
         )
 
 
     def get_target_ra_dec(self):
 
         return {
-            'ra': self.get_target_ra(),
-            'dec': self.get_target_dec()
+            "ra":
+                self.get_target_ra(),
+
+            "dec":
+                self.get_target_dec(),
         }
 
 
@@ -1358,9 +2019,9 @@ class MountController:
     def get_target_alt_az(self):
 
         return {
-            'alt':
+            "alt":
                 self.get_target_altitude(),
 
-            'az':
-                self.get_target_azimuth()
+            "az":
+                self.get_target_azimuth(),
         }

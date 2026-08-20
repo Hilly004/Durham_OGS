@@ -590,8 +590,8 @@ export default function CameraWidget({
                         className="
                             relative
                             flex
-                            min-h-0
-                            flex-1
+                            h-[600px]
+                            w-[800px]
                             items-center
                             justify-center
                             overflow-hidden

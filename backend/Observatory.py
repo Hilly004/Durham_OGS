@@ -51,15 +51,11 @@ class ObservatoryController:
                     self.safety.is_safe()
                 )
 
-
                 if currently_safe:
-
-                    self.safety_monitor_armed = True
 
                     self.unsafe_shutdown_triggered = False
 
-
-                elif self.safety_monitor_armed:
+                else:
 
                     if (
                         not self.unsafe_shutdown_triggered
@@ -69,46 +65,37 @@ class ObservatoryController:
 
                         self.shutdown_in_progress = True
 
-
                         try:
+
+                            self.logger.warning(
+                                "Unsafe conditions detected - stopping mount and closing dome",
+                                source="SYSTEM"
+                            )
 
                             self.safe_shutdown()
 
                             self.unsafe_shutdown_triggered = True
 
-
                         finally:
 
                             self.shutdown_in_progress = False
 
-
-                # Monitoring completed successfully.
-                # Allow a future error to be logged.
                 last_monitor_error = None
-
 
             except Exception as e:
 
                 error_message = str(e)
 
-
-                # Only log the error when it changes.
-                if (
-                    error_message
-                    != last_monitor_error
-                ):
+                if error_message != last_monitor_error:
 
                     self.logger.error(
                         f"Monitoring error: {error_message}",
                         source="SYSTEM"
                     )
 
-                    last_monitor_error = (
-                        error_message
-                    )
+                    last_monitor_error = error_message
 
-
-            time.sleep(10)    #change number eventually
+            time.sleep(2)
 
     def stop(self):
         self.running = False
@@ -215,3 +202,25 @@ class ObservatoryController:
             return False
 
         return self.mount.start_tracking()
+    
+    def nudge_mount(
+        self,
+        direction: str,
+        step_arcsec: float
+    ):
+
+        if not self.safety.can_start_observing():
+
+            self.logger.warning(
+                "Mount nudge prevented by safety system",
+                source="MOUNT"
+            )
+
+            return False
+
+        self.mount.nudge(
+            direction,
+            step_arcsec
+        )
+
+        return True

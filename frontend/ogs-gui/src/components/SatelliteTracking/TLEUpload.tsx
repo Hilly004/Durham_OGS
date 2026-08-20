@@ -294,9 +294,7 @@ export default function TLEUpload({
                                 event.target.value
                             )
                         }
-                        placeholder="
-                            e.g. ISS (ZARYA)
-                        "
+                        placeholder="e.g. ISS (ZARYA)"
                         disabled={loading}
                         className="
                             w-full
@@ -347,9 +345,7 @@ export default function TLEUpload({
                                 event.target.value
                             )
                         }
-                        placeholder="
-                            1 25544U 98067A ...
-                        "
+                        placeholder="1 25544U 98067A ..."
                         disabled={loading}
                         autoComplete="off"
                         spellCheck={false}
@@ -403,9 +399,7 @@ export default function TLEUpload({
                                 event.target.value
                             )
                         }
-                        placeholder="
-                            2 25544 51.6400 ...
-                        "
+                        placeholder="2 25544 51.6400 ..."
                         disabled={loading}
                         autoComplete="off"
                         spellCheck={false}

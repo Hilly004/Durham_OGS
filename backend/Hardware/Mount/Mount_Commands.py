@@ -1141,7 +1141,7 @@ class TenMicronMount:
         Returns: '0' invalid, '1' valid.
         """
         message = ':Sd' + str(dec) + '#'
-        return self.query(message)
+        return self.query(message, terminator=None)
 
     def set_site_elevation(self, elevation):
         """Set the current site elevation.
@@ -1239,7 +1239,7 @@ class TenMicronMount:
         Returns: '0' invalid, '1' valid.
         """
         message = ':So' + str(altitude) + '#'
-        return self.query(message)
+        return self.query(message, terminator=None)
 
     def set_target_ra(self, ra):
         """Set the target right ascension for a future slew.
@@ -1247,7 +1247,7 @@ class TenMicronMount:
         Returns: '0' invalid, '1' valid.
         """
         message = ':Sr' + str(ra) + '#'
-        return self.query(message)
+        return self.query(message, terminator=None)
 
     def set_relay_status(self, n, m):
         """Set the status of a user relay.

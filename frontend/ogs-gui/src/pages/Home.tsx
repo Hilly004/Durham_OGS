@@ -12,8 +12,8 @@ import DomeStatusWidget
 import WeatherStatusWidget
     from "../components/Weather/WeatherStatus";
 
-import CameraWidget
-    from "../components/Camera/CameraWidget";
+import HomeCameraWidget
+    from "../components/Camera/HomeCameraWidget";
 
 import {
     useObservatoryStatus,
@@ -247,7 +247,7 @@ export default function Home() {
                         overflow-hidden
                     "
                 >
-                    <CameraWidget />
+                    <HomeCameraWidget />
                 </div>
 
 

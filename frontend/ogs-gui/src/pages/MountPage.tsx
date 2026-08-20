@@ -10,6 +10,8 @@ import MountControls
 import MountStatus
     from "../components/Mount/MountStatus";
 
+import HomeCameraWidget from "../components/Camera/HomeCameraWidget";
+
 import {
     connectMount,
     disconnectMount,
@@ -19,6 +21,7 @@ import {
 import type {
     MountStatusData,
 } from "../api/mount";
+
 
 
 export default function MountPage() {
@@ -244,11 +247,14 @@ export default function MountPage() {
                     <MountStatus />
                 </div>
 
+                
+
 
                 {/* Controls */}
                 <div
                     className="
                         col-span-7
+                        row-span-2
                         min-h-0
                         overflow-hidden
                     "
@@ -259,6 +265,16 @@ export default function MountPage() {
                             status?.connected ?? false
                         }
                     />
+                </div>
+
+                {/* Camera */}
+                <div
+                className="
+                        col-span-5
+                        min-h-0
+                        overflow-hidden"
+                >
+                    <HomeCameraWidget />
                 </div>
 
             </div>

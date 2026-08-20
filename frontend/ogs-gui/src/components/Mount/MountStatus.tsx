@@ -172,7 +172,7 @@ export default function MountStatusWidget() {
                             }
                         `}
                     >
-                        RA / DEC
+                        RA / Dec
                     </button>
 
                 </div>
@@ -204,7 +204,7 @@ export default function MountStatusWidget() {
                     ) : (
                         <>
                             <DashboardStatusRow
-                                label="RA"
+                                label="Right Ascension"
                                 value={
                                     positionRd
                                         ? formatNumber(positionRd.ra)
@@ -213,7 +213,7 @@ export default function MountStatusWidget() {
                             />
 
                             <DashboardStatusRow
-                                label="DEC"
+                                label="Declination"
                                 value={
                                     positionRd
                                         ? `${formatNumber(positionRd.dec)}°`

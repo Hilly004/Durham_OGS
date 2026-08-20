@@ -13,6 +13,23 @@ class MountConnection:
 
         self.command_lock = threading.Lock()
 
+    def configure(
+        self,
+        host: str,
+        port: int
+    ):
+
+        if self.connected:
+
+            raise RuntimeError(
+                (
+                    "Disconnect mount before "
+                    "changing connection settings"
+                )
+            )
+
+        self.host = host
+        self.port = port
 
     def connect(self):
         if self.connected and self.socket is not None:
@@ -111,7 +128,66 @@ class MountConnection:
 
             raise
 
-        
+    def send_command_char(
+        self,
+        command: str
+    ):
+
+        if not self.is_connected():
+
+            raise ConnectionError(
+                "Mount not connected"
+            )
+
+
+        with self.lock:
+
+            try:
+
+                self.socket.sendall(
+                    command.encode(
+                        "ascii"
+                    )
+                )
+
+
+                response = (
+                    self.socket.recv(1)
+                )
+
+
+                if not response:
+
+                    raise TimeoutError(
+                        (
+                            "Mount response timeout "
+                            f"for command: {command}"
+                        )
+                    )
+
+
+                return (
+                    response
+                    .decode(
+                        "ascii",
+                        errors="ignore"
+                    )
+                )
+
+
+            except TimeoutError:
+
+                raise
+
+
+            except Exception as e:
+
+                raise RuntimeError(
+                    (
+                        "Mount command failed "
+                        f"{command}: {e}"
+                    )
+                ) from e
     
 
     
