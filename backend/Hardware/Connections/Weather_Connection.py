@@ -4,10 +4,9 @@ import time
 
 class WeatherConnection:
 
-    def __init__(self, weather_port, weather_baudrate, logger):
+    def __init__(self, weather_port, weather_baudrate):
         self.weather_port = weather_port
         self.weather_baudrate = weather_baudrate
-        self.logger = logger
         
         self.serial = None
         self.last_update = None
@@ -36,4 +35,22 @@ class WeatherConnection:
         if not self.serial or not self.serial.is_open:
             raise RuntimeError('Weather monitor not connected')
         
+
+    def configure(
+        self,
+        weather_port: str,
+        weather_baudrate: int
+    ):
+        if (
+            self.serial is not None
+            and self.serial.is_open
+        ):
+            raise RuntimeError(
+                "Disconnect weather station before "
+                "changing connection settings"
+            )
+
+        self.weather_port = weather_port
+        self.weather_baudrate = weather_baudrate
+            
         

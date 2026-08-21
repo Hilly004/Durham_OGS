@@ -8,6 +8,7 @@ class SettingsController:
         mount_connection=None,
         dome_connection=None,
         weather_connection=None,
+        camera=None
     ):
         self.repository = repository
         self.weather = weather
@@ -16,6 +17,8 @@ class SettingsController:
         self.mount_connection = mount_connection
         self.dome_connection = dome_connection
         self.weather_connection = weather_connection
+
+        self.camera = camera
 
     def get_settings(self):
         return self.repository.get_or_create()
@@ -36,6 +39,11 @@ class SettingsController:
             or values.get("weather_baudrate") != current.weather_baudrate
         )
 
+        camera_changed = (
+            values.get("camera_id")
+            != current.camera_id
+        )
+
         if mount_changed and self.mount_connection and self.mount_connection.connected:
             raise RuntimeError("Disconnect mount before changing its connection settings")
 
@@ -46,6 +54,9 @@ class SettingsController:
             serial_port = getattr(self.weather_connection, "serial", None)
             if serial_port is not None and serial_port.is_open:
                 raise RuntimeError("Disconnect weather station before changing its connection settings")
+
+        if camera_changed and self.camera and self.camera.is_connected():
+            raise RuntimeError("Disconnect camera before changing its camera ID")
 
         updated = self.repository.update(current, values)
         self.apply_settings(updated)
@@ -82,3 +93,12 @@ class SettingsController:
             serial_port = getattr(self.weather_connection, "serial", None)
             if serial_port is None or not serial_port.is_open:
                 self.weather_connection.configure(settings.weather_port, settings.weather_baudrate)
+
+        if (
+            self.camera is not None
+            and not self.camera.is_connected()
+            and settings.camera_id
+        ):
+            self.camera.set_camera_id(
+                settings.camera_id
+            )

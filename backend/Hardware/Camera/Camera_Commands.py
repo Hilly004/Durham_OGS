@@ -12,16 +12,11 @@ from vmbpy import (
 
 class MakoCamera:
 
-    DEFAULT_CAMERA_ID = "DEV_1AB2280007CD"
-
     def __init__(
         self,
         camera_id: str | None = None
     ):
-        self.camera_id = (
-            camera_id
-            or self.DEFAULT_CAMERA_ID
-        )
+        self.camera_id = camera_id
 
         self._vmb = None
         self._camera = None
@@ -49,11 +44,22 @@ class MakoCamera:
             if self._connected:
                 return True
 
+            if not self.camera_id:
+                raise RuntimeError(
+                    "No camera ID configured. "
+                    "Set the camera ID in Settings first."
+                )
+
             try:
 
-                self._vmb = (
-                    VmbSystem.get_instance()
+                print(
+                    "[CAMERA] Connecting using ID:",
+                    repr(self.camera_id),
+                    "type:",
+                    type(self.camera_id)
                 )
+
+                self._vmb = VmbSystem.get_instance()
 
                 self._vmb.__enter__()
 
@@ -67,37 +73,66 @@ class MakoCamera:
 
                 self._connected = True
 
+                print(
+                    "[CAMERA] Connected:",
+                    self._camera.get_model(),
+                    self._camera.get_serial()
+                )
+
                 return True
 
-            except Exception:
+            except Exception as exc:
+
+                print(
+                    "[CAMERA] Connection failed:",
+                    type(exc).__name__,
+                    str(exc)
+                )
 
                 self._cleanup()
 
                 raise
 
+    def disconnect(self) -> bool:
+        """
+        Disconnect from the camera and VmbSystem.
+        """
 
-    def disconnect(self):
+        success = True
 
-        with self._lock:
+        try:
+            if self._camera is not None:
+                self._camera.__exit__(
+                    None,
+                    None,
+                    None,
+                )
+        except Exception as exc:
+            print(
+                f"[CAMERA] Camera close failed: {exc}"
+            )
+            success = False
 
-            if self._streaming:
+        finally:
+            self._camera = None
 
-                try:
-                    self._camera.stop_streaming()
+        try:
+            if self._vmb is not None:
+                self._vmb.__exit__(
+                    None,
+                    None,
+                    None,
+                )
+        except Exception as exc:
+            print(
+                f"[CAMERA] VmbSystem close failed: {exc}"
+            )
+            success = False
 
-                except Exception:
-                    pass
+        finally:
+            self._vmb = None
 
-                self._streaming = False
-
-            self._cleanup()
-
-            with self._frame_lock:
-
-                self._latest_jpeg = None
-                self._frame_count = 0
-
-            return True
+        return success
 
     def _cleanup(self):
 
@@ -135,7 +170,37 @@ class MakoCamera:
     def is_connected(self):
 
         return self._connected
+    
+    def set_camera_id(
+        self,
+        camera_id: str
+    ):
+        if not isinstance(camera_id, str):
+            raise TypeError(
+                "Camera ID must be a string"
+            )
 
+        camera_id = camera_id.strip()
+
+        if not camera_id:
+            raise ValueError(
+                "Camera ID cannot be empty"
+            )
+
+        if self._connected:
+            raise RuntimeError(
+                "Disconnect camera before "
+                "changing camera ID"
+            )
+
+        self.camera_id = camera_id
+
+        print(
+            "[CAMERA] Camera ID configured:",
+            repr(self.camera_id)
+        )
+
+        return self.camera_id
 
     def _require_connection(self):
 

@@ -220,44 +220,6 @@ export default function SatelliteTrackingStatusWidget() {
 
                 </div>
 
-                {/* Two line element */}
-                <div
-                    className="
-                        rounded-lg
-                        border
-                        border-slate-800
-                        bg-slate-950/50
-                        p-4
-                    "
-                >
-
-                    <p
-                        className="
-                            text-xs
-                            uppercase
-                            tracking-wide
-                            text-slate-500
-                        "
-                    >
-                        TLE
-                    </p>
-
-                    <p
-                        className="
-                            mt-1
-                            text-base
-                            font-medium
-                            text-slate-100
-                        "
-                    >
-                        {
-                            status?.satelliteName
-                            ?? "No satellite selected"
-                        }
-                    </p>
-
-                </div>
-
 
                 {/* Tracking State */}
                 <div

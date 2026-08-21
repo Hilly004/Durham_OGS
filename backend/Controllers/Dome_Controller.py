@@ -136,18 +136,23 @@ class DomeController:
 
     def get_status(self):
 
+        connected = self.dome.is_connected()
+
+        if not connected:
+            return {
+                "connected": False,
+                "open": False,
+                "closed": False,
+                "opening": False,
+                "closing": False,
+            }
+
         return {
-            'connected':
-                self.is_connected,
-
-            'isOpen':
-                self.is_open,
-
-            'moving':
-                self.is_moving,
-
-            'fault':
-                self.has_fault
+            "connected": True,
+            "open": self.is_open,
+            "closed": self.is_closed,
+            "opening": self.is_opening,
+            "closing": self.is_closing,
         }
 
 

@@ -52,8 +52,9 @@ from api.mount_alignment import (
 
 from api.camera import (
     router as camera_router,
-    set_logger as set_camera_logger
+    set_controller as set_camera_controller
 )
+
 # ============================================================
 # MOUNT
 # ============================================================
@@ -106,6 +107,14 @@ from Hardware.Weather.Weather_Commands import (
     WeatherMonitor,
 )
 
+from Hardware.Connections.Weather_Connection import (
+    WeatherConnection
+)
+
+from Utilities.Config import (
+    weather_port,
+    weather_baudrate
+)
 
 # ============================================================
 # OBSERVATORY
@@ -139,6 +148,17 @@ from Utilities.Observatory_Logger import (
     ObservatoryLogger,
 )
 
+# ============================================================
+# CAMERA
+# ============================================================
+
+from Controllers.Camera_Controller import (
+    CameraController,
+)
+
+from Hardware.Camera.Camera_Commands import (
+    MakoCamera,
+)
 
 # ============================================================
 # LIFESPAN
@@ -246,6 +266,11 @@ set_dome_controller(
 # WEATHER
 # ============================================================
 
+weather_connection = WeatherConnection(
+    weather_port,
+    weather_baudrate
+)
+
 weather_monitor = WeatherMonitor()
 
 weather_controller = WeatherController(
@@ -257,6 +282,20 @@ set_weather_controller(
     weather_controller
 )
 
+# ============================================================
+# CAMERA
+# ============================================================
+
+camera_driver = MakoCamera()
+
+camera_controller = CameraController(
+    camera_driver,
+    logger,
+)
+
+set_camera_controller(
+    camera_controller
+)
 
 # ============================================================
 # SATELLITE
@@ -299,6 +338,10 @@ set_settings_runtime(
     weather_controller,
     observatory_controller,
     logger,
+    mount_conn=mount_connection,
+    dome_conn=dome_connection,
+    weather_conn=weather_connection,
+    camera_driver=camera_driver,
 )
 
 
@@ -323,6 +366,10 @@ app.include_router(
 
 app.include_router(
     weather_router
+)
+
+app.include_router(
+    camera_router
 )
 
 app.include_router(

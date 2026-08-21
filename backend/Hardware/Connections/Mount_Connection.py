@@ -190,4 +190,33 @@ class MountConnection:
                 ) from e
     
 
-    
+    def send_receive_byte(
+        self,
+        message: str
+    ):
+
+        if not self.connected:
+            raise ConnectionError(
+                "Mount not connected"
+            )
+
+        try:
+
+            self.socket.sendall(
+                message.encode()
+            )
+
+            response = (
+                self.socket
+                .recv(1)
+                .decode()
+            )
+
+            return response
+
+        except TimeoutError:
+
+            raise TimeoutError(
+                f"Mount response timeout "
+                f"for command: {message}"
+            )

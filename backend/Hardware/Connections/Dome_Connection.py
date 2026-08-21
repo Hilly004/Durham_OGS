@@ -135,3 +135,24 @@ class DomeConnection:
             raise RuntimeError(f'Failed to write to register {address}')
         
         return result
+    
+    def configure(
+        self,
+        dome_host: str,
+        dome_port: int
+    ):
+        if self.connected:
+            raise RuntimeError(
+                "Disconnect dome before changing "
+                "connection settings"
+            )
+
+        self.dome_host = dome_host
+        self.dome_port = dome_port
+
+        # Recreate the Modbus client using
+        # the new connection settings.
+        self.client = ModbusTcpClient(
+            host=self.dome_host,
+            port=self.dome_port
+        )

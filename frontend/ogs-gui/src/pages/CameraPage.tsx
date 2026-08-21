@@ -1,9 +1,23 @@
 import {
+    useCallback,
+    useEffect,
     useState,
 } from "react";
 
-import CameraWidget
-    from "../components/Camera/CameraWidget";
+import CameraControls
+    from "../components/Camera/CameraControls";
+
+import CameraStatus
+    from "../components/Camera/CameraStatus";
+
+import HomeCameraWidget
+    from "../components/Camera/HomeCameraWidget";
+
+import {
+    connectCamera,
+    disconnectCamera,
+    getCameraStatus,
+} from "../api/camera";
 
 import type {
     CameraStatusData,
@@ -12,17 +26,80 @@ import type {
 
 export default function CameraPage() {
 
-    const [
-        status,
-        setStatus,
-    ] = useState<CameraStatusData>({
-        connected: false,
-        streaming: false,
-        camera: null,
-        exposure: null,
-        gain: null,
-        frame_count: 0,
-    });
+    const [status, setStatus] =
+        useState<CameraStatusData | null>(null);
+
+    const [loading, setLoading] =
+        useState(false);
+
+
+    const updateStatus =
+        useCallback(async () => {
+
+            try {
+
+                const result =
+                    await getCameraStatus();
+
+                setStatus(result);
+
+            } catch (error) {
+
+                console.error(
+                    "Unable to retrieve camera status:",
+                    error
+                );
+
+                setStatus(null);
+
+            }
+
+        }, []);
+
+
+    useEffect(() => {
+
+        updateStatus();
+
+        const interval = setInterval(
+            updateStatus,
+            3000
+        );
+
+        return () => {
+            clearInterval(interval);
+        };
+
+    }, [updateStatus]);
+
+
+    async function handleConnection() {
+
+        setLoading(true);
+
+        try {
+
+            if (status?.connected) {
+                await disconnectCamera();
+            } else {
+                await connectCamera();
+            }
+
+        } catch (error) {
+
+            console.error(
+                "Unable to change camera connection:",
+                error
+            );
+
+        } finally {
+
+            await updateStatus();
+
+            setLoading(false);
+
+        }
+    }
 
 
     return (
@@ -39,7 +116,6 @@ export default function CameraPage() {
         >
 
             {/* Header */}
-
             <div
                 className="
                     flex
@@ -49,6 +125,7 @@ export default function CameraPage() {
                 "
             >
 
+                {/* Title */}
                 <div>
 
                     <h1
@@ -67,82 +144,134 @@ export default function CameraPage() {
                             text-slate-400
                         "
                     >
-
-                        {status.camera
-                            ? `${status.camera.name} · ${status.camera.serial}`
-                            : "Imaging camera control and acquisition"}
-
+                        Allied Vision camera control and acquisition
                     </p>
 
                 </div>
 
 
-                <div
-                    className="
-                        flex
-                        items-center
-                        gap-2
-                        rounded-lg
-                        border
-                        border-slate-800
-                        bg-slate-900
-                        px-3
-                        py-2
-                    "
-                >
+                {/* Connection */}
+                <div className="flex items-center gap-3">
 
-                    <span
-                        className={`
-                            h-2.5
-                            w-2.5
-                            rounded-full
-
-                            ${
-                                status.streaming
-                                    ? "animate-pulse bg-red-500"
-                                    : status.connected
-                                        ? "bg-green-500"
-                                        : "bg-red-500"
-                            }
-                        `}
-                    />
-
-
-                    <span
+                    <button
+                        type="button"
+                        onClick={handleConnection}
+                        disabled={loading}
                         className="
+                            rounded-lg
+                            border
+                            border-violet-500/30
+                            bg-violet-500/10
+                            px-4
+                            py-2
                             text-sm
-                            text-slate-300
+                            font-medium
+                            text-violet-300
+                            transition
+                            hover:bg-violet-500/20
+                            disabled:cursor-not-allowed
+                            disabled:opacity-50
+                        "
+                    >
+                        {loading
+                            ? "Working..."
+                            : status?.connected
+                                ? "Disconnect"
+                                : "Connect"}
+                    </button>
+
+
+                    <div
+                        className="
+                            flex
+                            items-center
+                            gap-2
+                            rounded-lg
+                            border
+                            border-slate-800
+                            bg-slate-900
+                            px-3
+                            py-2
                         "
                     >
 
-                        {status.streaming
-                            ? "Live"
-                            : status.connected
+                        <span
+                            className={`
+                                h-2.5
+                                w-2.5
+                                rounded-full
+
+                                ${
+                                    status?.connected
+                                        ? "bg-green-500"
+                                        : "bg-red-500"
+                                }
+                            `}
+                        />
+
+                        <span className="text-sm text-slate-300">
+                            {status?.connected
                                 ? "Connected"
                                 : "Disconnected"}
+                        </span>
 
-                    </span>
+                    </div>
 
                 </div>
 
             </div>
 
 
-            {/* Camera */}
-
+            {/* Main Content */}
             <div
                 className="
+                    grid
                     min-h-0
                     flex-1
-                    overflow-hidden
+                    grid-cols-12
+                    gap-4
                 "
             >
 
-                <CameraWidget
-                    onStatusChange={
-                        setStatus
-                    }
-                />
+                {/* Camera feed */}
+                <div
+                    className="
+                        col-span-7
+                        row-span-2
+                        min-h-0
+                        overflow-hidden
+                    "
+                >
+                    <HomeCameraWidget />
+                </div>
+
+
+                {/* Status */}
+                <div
+                    className="
+                        col-span-5
+                        min-h-0
+                        overflow-hidden
+                    "
+                >
+                    <CameraStatus />
+                </div>
+
+
+                {/* Controls */}
+                <div
+                    className="
+                        col-span-5
+                        min-h-0
+                        overflow-hidden
+                    "
+                >
+                    <CameraControls
+                        connected={
+                            status?.connected ?? false
+                        }
+                    />
+                </div>
 
             </div>
 

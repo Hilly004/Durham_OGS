@@ -271,18 +271,14 @@ class MountController:
 
             return True
 
-
         except Exception as e:
 
             self.logger.error(
-                (
-                    "Mount connection failed: "
-                    f"{e}"
-                ),
+                f"Mount connection failed: {e}",
                 source="MOUNT",
             )
 
-            return False
+            raise
 
 
     def disconnect(self):
@@ -827,17 +823,60 @@ class MountController:
 
     def get_status(self):
 
-        if not self.mount.is_connected():
-
+        if not self.is_connected():
             return {
                 "connected": False,
-                "data": None,
+                "movement_status": "Disconnected",
+                "tracking_status": "Off",
             }
+
+
+        movement_status = "Unknown"
+        tracking_status = "Unknown"
+
+
+        try:
+
+            movement_status = (
+                self.get_slew_status()
+            )
+
+        except Exception as e:
+
+            self.logger.warning(
+                (
+                    "Unable to read mount "
+                    f"slew status: {e}"
+                ),
+                source="MOUNT",
+            )
+
+
+        try:
+
+            tracking_status = (
+                self.get_tracking_status()
+            )
+
+        except Exception as e:
+
+            self.logger.warning(
+                (
+                    "Unable to read mount "
+                    f"tracking status: {e}"
+                ),
+                source="MOUNT",
+            )
 
 
         return {
             "connected": True,
-            "data": None,
+
+            "movement_status":
+                movement_status,
+
+            "tracking_status":
+                tracking_status,
         }
 
 

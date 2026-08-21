@@ -22,6 +22,9 @@ class TenMicronMount:
 
     def disconnect(self):
         return self.connection.disconnect()
+    
+    def _query(self,command):
+        return self.connection.send_receive(command)
 
 
 
@@ -600,11 +603,42 @@ class TenMicronMount:
         return self.query(message)
 
     def get_tracking_status(self):
-        """Get the current tracking status of the mount.
-        Returns: '0' not tracking, '1' tracking. Available from v2.3.0.
         """
-        message = ':GTRK#'
-        return self.query(message)
+        Get the current tracking state of the mount.
+
+        Sends the TenMicron ACK byte 0x06.
+
+        Expected responses:
+            'P' = tracking enabled
+            'L' = tracking disabled
+
+        Returns:
+            'Tracking'
+            'Off'
+            'Unknown'
+        """
+
+        response = (
+            self.connection
+            .send_receive_byte("\x06")
+        )
+
+        if response is None:
+            return "Unknown"
+
+        response = (
+            response
+            .strip()
+            .upper()
+        )
+
+        if response == "P":
+            return "Tracking"
+
+        if response == "L":
+            return "Off"
+
+        return "Unknown"
 
     def get_target_tracking_status(self):
         """Get whether the target object is at a position where tracking is allowed.

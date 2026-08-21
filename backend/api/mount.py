@@ -52,19 +52,23 @@ class NudgeRequest(BaseModel):
 
 @router.post('/connect')
 def connect():
+
     mount_controller = get_controller()
 
-    result = mount_controller.connect()
+    try:
 
-    if not result:
+        mount_controller.connect()
+
+        return {
+            "success": True
+        }
+
+    except Exception as e:
+
         raise HTTPException(
             status_code=503,
-            detail='Unable to connenct to mount'
-        )
-
-    return {
-        'success': True
-    }
+            detail=f"Unable to connect to mount: {e}"
+        ) from e
 
 @router.post('/disconnect')
 def disconnect():

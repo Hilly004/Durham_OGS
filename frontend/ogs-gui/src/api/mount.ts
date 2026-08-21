@@ -2,6 +2,8 @@ export interface MountStatusData {
     connected: boolean;
     alt: number;
     az: number;
+    movement_status?: string;
+    tracking_status?: string;
 }
 
 interface ApiResponse {
@@ -104,14 +106,34 @@ export async function slewMount(
 
 export async function connectMount(): Promise<void> {
 
-    const response = await fetch("/api/mount/connect", {
-        method: "POST"
-    });
+    const response = await fetch(
+        "/api/mount/connect",
+        {
+            method: "POST"
+        }
+    );
 
     if (!response.ok) {
-        throw new Error("Failed to connect mount");
+
+        let message =
+            "Failed to connect mount";
+
+        try {
+
+            const data =
+                await response.json();
+
+            if (data.detail) {
+                message = data.detail;
+            }
+
+        } catch {
+            // use default
+        }
+
+        throw new Error(message);
     }
-}   
+}
 
 export async function disconnectMount(): Promise<void> {
 
@@ -130,6 +152,13 @@ export type ManualMoveDirection =
     | "east"
     | "west";
 
+export type NudgeStepSizes = 
+    | 5
+    | 10
+    | 15
+    | 20
+    | 25
+    | 30;
 
 export async function startManualMove(
     direction: ManualMoveDirection
@@ -174,6 +203,40 @@ export async function stopManualMove(
 
         throw new Error(
             `Unable to stop mount ${direction}: ${message}`
+        );
+    }
+}
+
+export async function nudge(
+    direction: ManualMoveDirection,
+    step_arcsec: NudgeStepSizes
+): Promise<void> {
+
+    const response = await fetch(
+        "/api/mount/nudge_mount",
+        {
+            method: "POST",
+
+            headers: {
+                "Content-Type":
+                    "application/json",
+            },
+
+            body: JSON.stringify({
+                direction,
+                step_arcsec,
+            }),
+        }
+    );
+
+    if (!response.ok) {
+
+        const message =
+            await response.text();
+
+        throw new Error(
+            `Unable to nudge mount ${direction} ` +
+            `for ${step_arcsec} arcseconds: ${message}`
         );
     }
 }

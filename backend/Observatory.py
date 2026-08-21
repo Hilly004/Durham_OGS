@@ -224,3 +224,17 @@ class ObservatoryController:
         )
 
         return True
+    
+    def move_mount(
+            self,
+            direction: str,
+    ):
+        if not self.safety.can_start_observing():
+            self.logger.warning(
+                'Mount movement prevented by safety system',
+                source='MOUNT'
+            )
+
+        self.mount.move(direction)
+
+        return True

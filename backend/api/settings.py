@@ -23,7 +23,7 @@ activity_logger = None
 mount_connection = None
 dome_connection = None
 weather_connection = None
-
+camera = None
 
 def set_runtime(
     weather,
@@ -32,9 +32,11 @@ def set_runtime(
     mount_conn=None,
     dome_conn=None,
     weather_conn=None,
+    camera_driver=None,
 ):
     global weather_controller, observatory_controller, activity_logger
     global mount_connection, dome_connection, weather_connection
+    global camera
 
     weather_controller = weather
     observatory_controller = observatory
@@ -42,6 +44,7 @@ def set_runtime(
     mount_connection = mount_conn
     dome_connection = dome_conn
     weather_connection = weather_conn
+    camera = camera_driver
 
 
 def _controller(db: Session):
@@ -53,6 +56,7 @@ def _controller(db: Session):
         mount_connection,
         dome_connection,
         weather_connection,
+        camera,
     )
 
 

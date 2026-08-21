@@ -225,6 +225,22 @@ export default function MountStatusWidget() {
 
                 </div>
 
+                <DashboardStatusRow
+                    label="Movement"
+                    value={
+                        status?.movement_status
+                        ?? "--"
+                    }
+                />
+
+                <DashboardStatusRow
+                    label="Tracking"
+                    value={
+                        status?.tracking_status
+                        ?? "--"
+                    }
+                />
+
             </div>
 
         </DashboardStatusCard>

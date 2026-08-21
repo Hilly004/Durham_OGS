@@ -9,8 +9,6 @@ import {
     Camera,
     CircleStop,
     Play,
-    Plug,
-    PlugZap,
     RefreshCw,
 } from "lucide-react";
 
@@ -81,6 +79,51 @@ export default function CameraWidget({
         null
     );
 
+    const updateStatus =
+            useCallback(async () => {
+    
+                try {
+    
+                    const result =
+                        await getCameraStatus();
+    
+                    setStatus(result);
+    
+                } catch (error) {
+    
+                    console.error(
+                        "Unable to retrieve camera status:",
+                        error
+                    );
+    
+                    setStatus({
+                        connected: false,
+                        streaming: false,
+                        camera: null,
+                        exposure: null,
+                        gain: null,
+                        frame_count: 0,
+                    });
+                        
+                }
+    
+            }, []);
+    
+    
+        useEffect(() => {
+    
+            updateStatus();
+    
+            const interval = setInterval(
+                updateStatus,
+                3000
+            );
+    
+            return () => {
+                clearInterval(interval);
+            };
+    
+        }, [updateStatus]);
 
     /*
      * Used to force the browser to request
@@ -253,97 +296,36 @@ export default function CameraWidget({
     ]);
 
 
-    async function handleConnect() {
-
-        if (loading) {
-            return;
-        }
-
-
-        setLoading(true);
-        setError(null);
-
-
-        try {
-
-            await connectCamera();
-
-            await refreshStatus();
-
-            /*
-             * Retrieve the first still image
-             * after connection.
-             */
-            setFrameVersion(
-                current =>
-                    current + 1
-            );
-
-        } catch (err) {
-
-            const message =
-                err instanceof Error
-                    ? err.message
-                    : "Unable to connect camera";
-
-            setError(message);
-
-        } finally {
-
-            setLoading(false);
-
-        }
-    }
-
-
-    async function handleDisconnect() {
-
-        if (loading) {
-            return;
-        }
-
-
-        setLoading(true);
-        setError(null);
-
-
-        try {
-
-            /*
-             * The backend should stop the
-             * stream during disconnect too,
-             * but explicitly stopping it here
-             * gives the UI cleaner state.
-             */
-            if (status.streaming) {
-
-                try {
-                    await stopCameraStream();
-                } catch {
-                    // Disconnect anyway
+    async function handleConnection() {
+    
+            setLoading(true);
+    
+            try {
+    
+                if (status?.connected) {
+                    await disconnectCamera();
+                } else {
+                    await connectCamera();
                 }
+    
+            } catch (error) {
+    
+                console.error(
+                    "Unable to change camera connection:",
+                    error
+                );
+    
+            } finally {
+    
+                /*
+                 * Always ask the backend for the real state.
+                 */
+                await updateStatus();
+    
+                setLoading(false);
+    
             }
-
-
-            await disconnectCamera();
-
-            await refreshStatus();
-
-        } catch (err) {
-
-            const message =
-                err instanceof Error
-                    ? err.message
-                    : "Unable to disconnect camera";
-
-            setError(message);
-
-        } finally {
-
-            setLoading(false);
-
         }
-    }
 
 
     async function handleStartStream() {
@@ -767,112 +749,69 @@ export default function CameraWidget({
 
                     {/* Connection */}
 
-                    <div
-                        className="
-                            rounded-lg
-                            border
-                            border-slate-800
-                            bg-slate-950/40
-                            p-4
-                        "
-                    >
+                    <div className="flex items-center gap-3">
 
-                        <h3
+                        <button
+                            type="button"
+                            onClick={handleConnection}
+                            disabled={loading}
                             className="
-                                mb-3
+                                rounded-lg
+                                border
+                                border-violet-500/30
+                                bg-violet-500/10
+                                px-4
+                                py-2
                                 text-sm
-                                font-semibold
-                                text-slate-200
+                                font-medium
+                                text-violet-300
+                                transition
+                                hover:bg-violet-500/20
+                                disabled:cursor-not-allowed
+                                disabled:opacity-50
                             "
                         >
-                            Connection
-                        </h3>
+                            {loading
+                                ? "Working..."
+                                : status?.connected
+                                    ? "Disconnect"
+                                    : "Connect"}
+                        </button>
 
 
                         <div
                             className="
-                                grid
-                                grid-cols-2
+                                flex
+                                items-center
                                 gap-2
+                                rounded-lg
+                                border
+                                border-slate-800
+                                bg-slate-900
+                                px-3
+                                py-2
                             "
                         >
 
-                            <button
-                                type="button"
-                                onClick={
-                                    handleConnect
-                                }
+                            <span
+                                className={`
+                                    h-2.5
+                                    w-2.5
+                                    rounded-full
 
-                                disabled={
-                                    loading ||
-                                    status.connected
-                                }
+                                    ${
+                                        status?.connected
+                                            ? "bg-green-500"
+                                            : "bg-red-500"
+                                    }
+                                `}
+                            />
 
-                                className="
-                                    flex
-                                    items-center
-                                    justify-center
-                                    gap-2
-                                    rounded-lg
-                                    bg-emerald-600
-                                    px-3
-                                    py-2
-                                    text-sm
-                                    font-medium
-                                    text-white
-                                    transition
-                                    hover:bg-emerald-500
-                                    disabled:cursor-not-allowed
-                                    disabled:opacity-40
-                                "
-                            >
-
-                                <PlugZap
-                                    size={16}
-                                />
-
-                                Connect
-
-                            </button>
-
-
-                            <button
-                                type="button"
-                                onClick={
-                                    handleDisconnect
-                                }
-
-                                disabled={
-                                    loading ||
-                                    !status.connected
-                                }
-
-                                className="
-                                    flex
-                                    items-center
-                                    justify-center
-                                    gap-2
-                                    rounded-lg
-                                    bg-slate-800
-                                    px-3
-                                    py-2
-                                    text-sm
-                                    font-medium
-                                    text-slate-200
-                                    transition
-                                    hover:bg-slate-700
-                                    disabled:cursor-not-allowed
-                                    disabled:opacity-40
-                                "
-                            >
-
-                                <Plug
-                                    size={16}
-                                />
-
-                                Disconnect
-
-                            </button>
+                            <span className="text-sm text-slate-300">
+                                {status?.connected
+                                    ? "Connected"
+                                    : "Disconnected"}
+                            </span>
 
                         </div>
 
