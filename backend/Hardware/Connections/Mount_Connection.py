@@ -1,7 +1,6 @@
 import socket
 import threading
 
-from Utilities.Config import *
 class MountConnection:
 
     def __init__(self, host:str, port:int):
@@ -195,28 +194,49 @@ class MountConnection:
         message: str
     ):
 
-        if not self.connected:
-            raise ConnectionError(
+        if not self.connected or self.socket is None:
+            raise RuntimeError(
                 "Mount not connected"
             )
 
         try:
 
-            self.socket.sendall(
-                message.encode()
-            )
+            with self.command_lock:
 
-            response = (
-                self.socket
-                .recv(1)
-                .decode()
-            )
+                self.socket.sendall(
+                    message.encode(
+                        "latin-1"
+                    )
+                )
 
-            return response
+                response = (
+                    self.socket
+                    .recv(1)
+                    .decode(
+                        "latin-1"
+                    )
+                )
 
-        except TimeoutError:
+                if not response:
+                    raise ConnectionError(
+                        "Mount connection closed"
+                    )
+
+                return response
+
+        except socket.timeout:
 
             raise TimeoutError(
-                f"Mount response timeout "
-                f"for command: {message}"
+                "Mount response timeout for "
+                f"byte command: {repr(message)}"
             )
+
+        except (
+            ConnectionError,
+            BrokenPipeError,
+            ConnectionResetError,
+            OSError,
+        ):
+
+            self.disconnect()
+            raise

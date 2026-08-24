@@ -1,7 +1,7 @@
 host = '192.168.1.119'
 port = 3490
 
-dome_host = '' 
+dome_host = '192.168.1.1' 
 dome_port = 502
 
 weather_port = ''

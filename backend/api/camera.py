@@ -1,7 +1,13 @@
+import asyncio
+
 from fastapi import (
     APIRouter,
     HTTPException,
     Response
+)
+
+from fastapi.responses import (
+    StreamingResponse
 )
 
 from pydantic import BaseModel
@@ -60,6 +66,10 @@ class GainRequest(BaseModel):
     gain_db: float
 
 
+class FrameRateRequest(BaseModel):
+    fps: float
+
+
 # =========================================================
 # Connection
 # =========================================================
@@ -71,9 +81,11 @@ def connect():
         get_controller()
     )
 
+
     result = (
         camera_controller.connect()
     )
+
 
     if not result:
 
@@ -84,6 +96,7 @@ def connect():
                 "to camera"
             )
         )
+
 
     return {
         "success": True
@@ -97,9 +110,11 @@ def disconnect():
         get_controller()
     )
 
+
     result = (
         camera_controller.disconnect()
     )
+
 
     return {
         "success": result
@@ -117,8 +132,10 @@ def status():
         get_controller()
     )
 
+
     return {
         "success": True,
+
         "data": (
             camera_controller
             .get_status()
@@ -137,6 +154,7 @@ def get_exposure():
         get_controller()
     )
 
+
     try:
 
         exposure = (
@@ -144,12 +162,14 @@ def get_exposure():
             .get_exposure()
         )
 
+
     except ConnectionError:
 
         raise HTTPException(
             status_code=503,
             detail="Camera not connected"
         )
+
 
     except Exception as e:
 
@@ -174,6 +194,7 @@ def set_exposure(
         get_controller()
     )
 
+
     try:
 
         exposure = (
@@ -183,6 +204,7 @@ def set_exposure(
             )
         )
 
+
     except ConnectionError:
 
         raise HTTPException(
@@ -190,12 +212,14 @@ def set_exposure(
             detail="Camera not connected"
         )
 
+
     except ValueError as e:
 
         raise HTTPException(
             status_code=400,
             detail=str(e)
         )
+
 
     except Exception as e:
 
@@ -222,6 +246,7 @@ def get_gain():
         get_controller()
     )
 
+
     try:
 
         gain = (
@@ -229,12 +254,14 @@ def get_gain():
             .get_gain()
         )
 
+
     except ConnectionError:
 
         raise HTTPException(
             status_code=503,
             detail="Camera not connected"
         )
+
 
     except Exception as e:
 
@@ -259,6 +286,7 @@ def set_gain(
         get_controller()
     )
 
+
     try:
 
         gain = (
@@ -268,6 +296,7 @@ def set_gain(
             )
         )
 
+
     except ConnectionError:
 
         raise HTTPException(
@@ -275,12 +304,14 @@ def set_gain(
             detail="Camera not connected"
         )
 
+
     except ValueError as e:
 
         raise HTTPException(
             status_code=400,
             detail=str(e)
         )
+
 
     except Exception as e:
 
@@ -295,8 +326,101 @@ def set_gain(
         "gain_db": gain
     }
 
+
 # =========================================================
-# Image acquisition
+# Frame rate
+# =========================================================
+
+@router.get("/frame-rate")
+def get_frame_rate():
+
+    camera_controller = (
+        get_controller()
+    )
+
+
+    try:
+
+        fps = (
+            camera_controller
+            .get_frame_rate()
+        )
+
+
+    except ConnectionError:
+
+        raise HTTPException(
+            status_code=503,
+            detail="Camera not connected"
+        )
+
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+
+    return {
+        "success": True,
+        "fps": fps
+    }
+
+
+@router.post("/frame-rate")
+def set_frame_rate(
+    request: FrameRateRequest
+):
+
+    camera_controller = (
+        get_controller()
+    )
+
+
+    try:
+
+        fps = (
+            camera_controller
+            .set_frame_rate(
+                request.fps
+            )
+        )
+
+
+    except ConnectionError:
+
+        raise HTTPException(
+            status_code=503,
+            detail="Camera not connected"
+        )
+
+
+    except ValueError as e:
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
+
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=500,
+            detail=str(e)
+        )
+
+
+    return {
+        "success": True,
+        "fps": fps
+    }
+
+
+# =========================================================
+# Single image acquisition
 # =========================================================
 
 @router.get("/frame")
@@ -306,6 +430,7 @@ def get_frame():
         get_controller()
     )
 
+
     if not camera_controller.is_connected():
 
         raise HTTPException(
@@ -313,17 +438,20 @@ def get_frame():
             detail="Camera not connected"
         )
 
+
     try:
 
-        if (
-            camera_controller
-            .is_streaming()
-        ):
+        #
+        # When streaming, return the most recent
+        # live-view frame.
+        #
+        if camera_controller.is_streaming():
 
             jpeg_data = (
                 camera_controller
                 .get_latest_jpeg()
             )
+
 
             if jpeg_data is None:
 
@@ -335,6 +463,11 @@ def get_frame():
                     )
                 )
 
+
+        #
+        # When not streaming, perform a true
+        # synchronous high-quality capture.
+        #
         else:
 
             jpeg_data = (
@@ -342,8 +475,10 @@ def get_frame():
                 .capture_jpeg()
             )
 
+
     except HTTPException:
         raise
+
 
     except ConnectionError:
 
@@ -352,12 +487,14 @@ def get_frame():
             detail="Camera not connected"
         )
 
+
     except Exception as e:
 
         raise HTTPException(
             status_code=500,
             detail=str(e)
         )
+
 
     return Response(
         content=jpeg_data,
@@ -367,12 +504,15 @@ def get_frame():
                 "no-store, "
                 "no-cache, "
                 "must-revalidate"
-            )
+            ),
+
+            "Pragma": "no-cache",
         }
     )
 
+
 # =========================================================
-# Streaming
+# Acquisition control
 # =========================================================
 
 @router.post("/stream/start")
@@ -382,6 +522,7 @@ def start_stream():
         get_controller()
     )
 
+
     if not camera_controller.is_connected():
 
         raise HTTPException(
@@ -389,9 +530,22 @@ def start_stream():
             detail="Camera not connected"
         )
 
+
     try:
 
-        camera_controller.start_streaming()
+        result = (
+            camera_controller
+            .start_streaming()
+        )
+
+
+    except ConnectionError:
+
+        raise HTTPException(
+            status_code=503,
+            detail="Camera not connected"
+        )
+
 
     except Exception as e:
 
@@ -400,10 +554,12 @@ def start_stream():
             detail=str(e)
         )
 
+
     return {
-        "success": True,
+        "success": result,
         "streaming": True
     }
+
 
 @router.post("/stream/stop")
 def stop_stream():
@@ -412,6 +568,7 @@ def stop_stream():
         get_controller()
     )
 
+
     if not camera_controller.is_connected():
 
         raise HTTPException(
@@ -419,9 +576,14 @@ def stop_stream():
             detail="Camera not connected"
         )
 
+
     try:
 
-        camera_controller.stop_streaming()
+        result = (
+            camera_controller
+            .stop_streaming()
+        )
+
 
     except Exception as e:
 
@@ -430,10 +592,12 @@ def stop_stream():
             detail=str(e)
         )
 
+
     return {
-        "success": True,
+        "success": result,
         "streaming": False
     }
+
 
 @router.get("/stream/status")
 def stream_status():
@@ -441,6 +605,7 @@ def stream_status():
     camera_controller = (
         get_controller()
     )
+
 
     return {
         "success": True,
@@ -455,3 +620,114 @@ def stream_status():
             .is_streaming()
         )
     }
+
+
+# =========================================================
+# MJPEG live video
+# =========================================================
+
+@router.get("/stream")
+async def stream_camera():
+
+    camera_controller = (
+        get_controller()
+    )
+
+
+    if not camera_controller.is_connected():
+
+        raise HTTPException(
+            status_code=503,
+            detail="Camera not connected"
+        )
+
+
+    if not camera_controller.is_streaming():
+
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Camera stream is not running"
+            )
+        )
+
+
+    async def generate():
+
+        try:
+
+            while (
+                camera_controller
+                .is_connected()
+                and
+                camera_controller
+                .is_streaming()
+            ):
+
+                frame = (
+                    camera_controller
+                    .get_latest_jpeg()
+                )
+
+
+                if frame is not None:
+
+                    yield (
+                        b"--frame\r\n"
+                        b"Content-Type: image/jpeg\r\n"
+                        b"Content-Length: "
+                        + str(
+                            len(frame)
+                        ).encode()
+                        + b"\r\n\r\n"
+                        + frame
+                        + b"\r\n"
+                    )
+
+
+                #
+                # About 20 possible sends per second.
+                # The actual rate is limited by camera
+                # acquisition and JPEG generation.
+                #
+                await asyncio.sleep(
+                    0.05
+                )
+
+
+        except asyncio.CancelledError:
+
+            #
+            # Browser closed the MJPEG connection.
+            #
+            return
+
+
+        except Exception:
+
+            #
+            # Do not leave an MJPEG response generating
+            # forever after the camera is disconnected
+            # or acquisition stops.
+            #
+            return
+
+
+    return StreamingResponse(
+        generate(),
+
+        media_type=(
+            "multipart/x-mixed-replace;"
+            " boundary=frame"
+        ),
+
+        headers={
+            "Cache-Control": (
+                "no-store, "
+                "no-cache, "
+                "must-revalidate"
+            ),
+
+            "Pragma": "no-cache",
+        }
+    )

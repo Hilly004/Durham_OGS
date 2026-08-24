@@ -69,12 +69,6 @@ from Hardware.Connections.Mount_Connection import (
     MountConnection,
 )
 
-from Utilities.Config import (
-    host,
-    port,
-)
-
-
 # ============================================================
 # DOME
 # ============================================================
@@ -87,11 +81,6 @@ from Hardware.Dome.Dome_Commands import (
 
 from Hardware.Connections.Dome_Connection import (
     DomeConnection,
-)
-
-from Utilities.Config import (
-    dome_host,
-    dome_port,
 )
 
 
@@ -109,11 +98,6 @@ from Hardware.Weather.Weather_Commands import (
 
 from Hardware.Connections.Weather_Connection import (
     WeatherConnection
-)
-
-from Utilities.Config import (
-    weather_port,
-    weather_baudrate
 )
 
 # ============================================================
@@ -186,7 +170,26 @@ Base.metadata.create_all(
     bind=engine
 )
 
+# ============================================================
+# STARTUP SETTINGS
+# ============================================================
 
+from database.database import SessionLocal
+from Repository.SettingsRepo import SettingsRepository
+
+
+def load_startup_settings():
+
+    db = SessionLocal()
+
+    try:
+        repository = SettingsRepository(db)
+        return repository.get_or_create()
+
+    finally:
+        db.close()
+
+startup_settings = load_startup_settings()
 # ============================================================
 # FASTAPI APP
 # ============================================================
@@ -217,8 +220,8 @@ set_satellite_logger(
 # ============================================================
 
 mount_connection = MountConnection(
-    host,
-    port,
+    startup_settings.mount_host,
+    startup_settings.mount_port,
 )
 
 mount_driver = TenMicronMount(
@@ -244,8 +247,8 @@ set_mount_alignment_controller(
 # ============================================================
 
 dome_connection = DomeConnection(
-    dome_host,
-    dome_port,
+    startup_settings.dome_host,
+    startup_settings.dome_port,
 )
 
 dome_driver = AstroHavenDome(
@@ -267,8 +270,8 @@ set_dome_controller(
 # ============================================================
 
 weather_connection = WeatherConnection(
-    weather_port,
-    weather_baudrate
+    startup_settings.weather_port,
+    startup_settings.weather_baudrate
 )
 
 weather_monitor = WeatherMonitor()
@@ -286,7 +289,12 @@ set_weather_controller(
 # CAMERA
 # ============================================================
 
-camera_driver = MakoCamera()
+camera_driver = MakoCamera(
+    camera_id=(
+        startup_settings.camera_id
+        or None
+    )
+)
 
 camera_controller = CameraController(
     camera_driver,

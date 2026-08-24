@@ -1,5 +1,4 @@
 from pymodbus.client import ModbusTcpClient
-from Utilities.Config import *
 
 class DomeConnection:
 

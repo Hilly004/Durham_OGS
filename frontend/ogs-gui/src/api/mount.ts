@@ -213,7 +213,7 @@ export async function nudge(
 ): Promise<void> {
 
     const response = await fetch(
-        "/api/mount/nudge_mount",
+        "/api/mount/nudge",
         {
             method: "POST",
 

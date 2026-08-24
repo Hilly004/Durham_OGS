@@ -295,11 +295,11 @@ def nudge(
     request: NudgeRequest
 ):
 
-    mount_controller = get_controller()
+    observatory = get_observatory_controller()
 
     try:
 
-        mount_controller.nudge(
+        result = observatory.nudge_mount(
             request.direction,
             request.step_arcsec
         )
@@ -329,11 +329,12 @@ def nudge(
         )
 
 
-    except Exception as e:
-
+    if not result:
         raise HTTPException(
-            status_code=500,
-            detail=f'Mount nudge failed: {e}'
+            status_code=409,
+            detail=(
+                'Mount nudge prevented by observatory safety system'
+            )
         )
 
 

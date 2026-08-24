@@ -36,6 +36,11 @@ class ObservatoryController:
 
         self.monitor_thread.start()
 
+    def arm_safety_monitor(self):
+        self.safety_monitor_armed = True
+
+    def disarm_safety_monitor(self):
+        self.safety_monitor_armed = False
 
     def _monitor(self):
 
@@ -46,6 +51,10 @@ class ObservatoryController:
             try:
 
                 self.weather.update()
+
+                if not self.safety_monitor_armed:
+                    time.sleep(2)
+                    continue
 
                 currently_safe = (
                     self.safety.is_safe()
@@ -234,6 +243,8 @@ class ObservatoryController:
                 'Mount movement prevented by safety system',
                 source='MOUNT'
             )
+
+            return False
 
         self.mount.move(direction)
 

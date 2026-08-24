@@ -1,6 +1,5 @@
-from Utilities import *
 import serial
-import time
+
 
 class WeatherConnection:
 

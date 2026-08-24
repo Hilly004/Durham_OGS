@@ -63,62 +63,62 @@ class AstroHavenDome:
         )
 
     def progressive_close(self):
-        self.connection.write_coil(25, True)
+        return self.connection.write_coil(25, True)
 
     #########################################################################
     #                       Jog Commands
     #########################################################################
 
-    def left_jog_up(self):
-        self.connection.write_coil(16, True)
+    def left_jog_up(self, enabled: bool):
+        return self.connection.write_coil(16, enabled)
 
-    def left_jog_down(self):
-        self.connection.write_coil(14, True)
+    def left_jog_down(self, enabled: bool):
+        return self.connection.write_coil(14, enabled)
 
-    def right_jog_up(self):
-        self.connection.write_coil(32, True)
+    def right_jog_up(self, enabled: bool):
+        return self.connection.write_coil(32, enabled)
 
-    def right_jog_down(self):
-        self.connection.write_coil(30, True)
+    def right_jog_down(self, enabled: bool):
+        return self.connection.write_coil(30, enabled)
 
     #########################################################################
     #                       Stop Commands
     #########################################################################
 
     def stop_left(self):
-        self.connection.write_coil(21, True)
+        return self.connection.write_coil(21, True)
 
     def stop_right(self):
-        self.connection.write_coil(37, True)
+        return self.connection.write_coil(37, True)
 
     def stop_all(self):
-        self.connection.write_coil(39, True)
+        return self.connection.write_coil(39, True)
 
     #########################################################################
     #                       Reset Commands
     #########################################################################
 
     def fault_reset(self):
-        self.connection.write_coil(8, True)
+        return self.connection.write_coil(8, True)
 
     def bg_reset(self):
-        self.connection.write_coil(40, True)
+        return self.connection.write_coil(40, True)
 
     #########################################################################
     #                       Tracking Commands
     #########################################################################
 
     def enable_tracking(self):
-        self.connection.write_coil(93, True)
+        return self.connection.write_coil(93, True)
 
     def disable_tracking(self):
-        self.connection.write_coil(93, False)
+        return self.connection.write_coil(93, False)
 
     def set_target_azimuth(self, azimuth):
-        self.connection.write_register(3, azimuth)
+        return self.connection.write_register(3, azimuth)
 
     def set_target_altitude(self, altitude):
-        self.connection.write_register(2, altitude)
+        return self.connection.write_register(2, altitude)
 
     #########################################################################
     #                       Angle Registers

@@ -133,7 +133,30 @@ class DomeController:
             self.dome.fault()
         )
 
+    @property
+    def is_closed(self):
 
+        return (
+            self.dome.all_closed()
+        )
+    
+    @property
+    def is_opening(self):
+
+        return (
+            self.dome.left_forward_running()
+            or self.dome.right_forward_running()
+        )
+
+    @property
+    def is_closing(self):
+
+        return (
+            self.dome.left_reverse_running()
+            or self.dome.right_reverse_running()
+        )
+
+    
     def get_status(self):
 
         connected = self.dome.is_connected()
@@ -145,6 +168,8 @@ class DomeController:
                 "closed": False,
                 "opening": False,
                 "closing": False,
+                "moving": False,
+                "fault": False,
             }
 
         return {
@@ -153,6 +178,8 @@ class DomeController:
             "closed": self.is_closed,
             "opening": self.is_opening,
             "closing": self.is_closing,
+            "moving": self.is_moving,
+            "fault": self.has_fault,
         }
 
 
@@ -377,6 +404,283 @@ class DomeController:
                 (
                     "Right dome shutter "
                     f"close failed: {e}"
+                ),
+                source="DOME"
+            )
+
+            raise
+
+    # =========================================================
+    # Jog commands
+    # =========================================================
+
+    def start_jog_left_up(self):
+
+        if not self.is_connected:
+
+            raise ConnectionError(
+                "Dome not connected"
+            )
+
+
+        try:
+
+            result = (
+                self.dome.left_jog_up(True)
+            )
+
+            self.logger.info(
+                "Started left dome shutter jog up",
+                source="DOME"
+            )
+
+            return result
+
+
+        except Exception as e:
+
+            self.logger.error(
+                (
+                    f"Failed to start left dome shutter jog up: {e}"
+                ),
+                source="DOME"
+            )
+
+            raise
+
+    def stop_jog_left_up(self):
+
+        if not self.is_connected:
+
+            raise ConnectionError(
+                "Dome not connected"
+            )
+
+
+        try:
+
+            result = (
+                self.dome.left_jog_up(False)
+            )
+
+            self.logger.info(
+                "Stopped left dome shutter jog up",
+                source="DOME"
+            )
+
+            return result
+
+
+        except Exception as e:
+
+            self.logger.error(
+                (
+                    f"Failed to stop left dome shutter jog up: {e}"
+                ),
+                source="DOME"
+            )
+
+            raise
+
+
+    def start_jog_right_up(self):
+
+        if not self.is_connected:
+
+            raise ConnectionError(
+                "Dome not connected"
+            )
+
+
+        try:
+
+            result = (
+                self.dome.right_jog_up(True)
+            )
+
+            self.logger.info(
+                "Started right dome shutter jog up",
+                source="DOME"
+            )
+
+            return result
+
+
+        except Exception as e:
+
+            self.logger.error(
+                (
+                    f"Failed to start right dome shutter jog up: {e}"
+                ),
+                source="DOME"
+            )
+
+            raise
+
+    def stop_jog_right_up(self):
+
+        if not self.is_connected:
+
+            raise ConnectionError(
+                "Dome not connected"
+            )
+
+
+        try:
+
+            result = (
+                self.dome.right_jog_up(False)
+            )
+
+            self.logger.info(
+                "Stopped right dome shutter jog up",
+                source="DOME"
+            )
+
+            return result
+
+
+        except Exception as e:
+
+            self.logger.error(
+                (
+                    f"Failed to stop right dome shutter jog up: {e}"
+                ),
+                source="DOME"
+            )
+
+            raise
+
+    def start_jog_left_down(self):
+
+        if not self.is_connected:
+
+            raise ConnectionError(
+                "Dome not connected"
+            )
+
+
+        try:
+
+            result = (
+                self.dome.left_jog_down(True)
+            )
+
+            self.logger.info(
+                "Started left dome shutter jog down",
+                source="DOME"
+            )
+
+            return result
+
+
+        except Exception as e:
+
+            self.logger.error(
+                (
+                    f"Failed to start left dome shutter jog down: {e}"
+                ),
+                source="DOME"
+            )
+
+            raise
+
+    def stop_jog_left_down(self):
+
+        if not self.is_connected:
+
+            raise ConnectionError(
+                "Dome not connected"
+            )
+
+
+        try:
+
+            result = (
+                self.dome.left_jog_down(False)
+            )
+
+            self.logger.info(
+                "Stopped left dome shutter jog down",
+                source="DOME"
+            )
+
+            return result
+
+
+        except Exception as e:
+
+            self.logger.error(
+                (
+                    f"Failed to stop left dome shutter jog down: {e}"
+                ),
+                source="DOME"
+            )
+
+            raise
+
+    def start_jog_right_down(self):
+
+        if not self.is_connected:
+
+            raise ConnectionError(
+                "Dome not connected"
+            )
+
+
+        try:
+
+            result = (
+                self.dome.right_jog_down(True)
+            )
+
+            self.logger.info(
+                "Started right dome shutter jog down",
+                source="DOME"
+            )
+
+            return result
+
+
+        except Exception as e:
+
+            self.logger.error(
+                (
+                    f"Failed to start right dome shutter jog down: {e}"
+                ),
+                source="DOME"
+            )
+
+            raise
+
+    def stop_jog_right_down(self):
+
+        if not self.is_connected:
+
+            raise ConnectionError(
+                "Dome not connected"
+            )
+
+
+        try:
+
+            result = (
+                self.dome.right_jog_down(False)
+            )
+
+            self.logger.info(
+                "Stopped right dome shutter jog down",
+                source="DOME"
+            )
+
+            return result
+
+
+        except Exception as e:
+
+            self.logger.error(
+                (
+                    f"Failed to stop right dome shutter jog down: {e}"
                 ),
                 source="DOME"
             )

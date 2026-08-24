@@ -1,7 +1,6 @@
 import {
     useCallback,
     useEffect,
-    useRef,
     useState,
 } from "react";
 
@@ -79,70 +78,26 @@ export default function CameraWidget({
         null
     );
 
-    const updateStatus =
-            useCallback(async () => {
-    
-                try {
-    
-                    const result =
-                        await getCameraStatus();
-    
-                    setStatus(result);
-    
-                } catch (error) {
-    
-                    console.error(
-                        "Unable to retrieve camera status:",
-                        error
-                    );
-    
-                    setStatus({
-                        connected: false,
-                        streaming: false,
-                        camera: null,
-                        exposure: null,
-                        gain: null,
-                        frame_count: 0,
-                    });
-                        
-                }
-    
-            }, []);
-    
-    
-        useEffect(() => {
-    
-            updateStatus();
-    
-            const interval = setInterval(
-                updateStatus,
-                3000
-            );
-    
-            return () => {
-                clearInterval(interval);
-            };
-    
-        }, [updateStatus]);
 
     /*
-     * Used to force the browser to request
-     * the newest frame.
+     * Used only for single-frame mode.
+     *
+     * Incrementing this causes the browser
+     * to request a fresh still image while
+     * avoiding browser caching.
      */
     const [
-        frameVersion,
-        setFrameVersion,
+        stillVersion,
+        setStillVersion,
     ] = useState(0);
 
-
-    /*
-     * Prevent overlapping image refresh timers.
-     */
-    const frameTimer =
-        useRef<number | null>(
-            null
-        );
-
+    const [
+        streamVersion,
+        setStreamVersion,
+    ] = useState(0);
+    // =========================================================
+    // Status
+    // =========================================================
 
     const refreshStatus =
         useCallback(async () => {
@@ -152,23 +107,20 @@ export default function CameraWidget({
                 const currentStatus =
                     await getCameraStatus();
 
+
                 setStatus(
                     currentStatus
                 );
+
 
                 onStatusChange?.(
                     currentStatus
                 );
 
 
-                /*
-                 * Don't overwrite a field while
-                 * the user is typing unless its
-                 * current value is blank.
-                 */
                 if (
                     currentStatus.exposure !==
-                        null
+                    null
                 ) {
 
                     setExposure(
@@ -181,7 +133,7 @@ export default function CameraWidget({
 
                 if (
                     currentStatus.gain !==
-                        null
+                    null
                 ) {
 
                     setGain(
@@ -203,15 +155,24 @@ export default function CameraWidget({
 
             }
 
-        }, [onStatusChange]);
+        }, [
+            onStatusChange,
+        ]);
 
 
     /*
      * Poll camera state.
+     *
+     * This checks status only.
+     * It does NOT poll frames.
+     *
+     * Live frames are supplied continuously
+     * by the MJPEG stream endpoint.
      */
     useEffect(() => {
 
         refreshStatus();
+
 
         const timer =
             window.setInterval(
@@ -221,74 +182,36 @@ export default function CameraWidget({
 
 
         return () => {
+
             window.clearInterval(
                 timer
             );
+
         };
 
-    }, [refreshStatus]);
+    }, [
+        refreshStatus,
+    ]);
 
 
     /*
-     * Refresh image while streaming.
-     *
-     * 200 ms = about 5 browser updates
-     * per second.
-     *
-     * The camera itself can continue
-     * acquiring faster than this.
+     * When the camera becomes connected,
+     * request one still frame if live
+     * acquisition is not running.
      */
     useEffect(() => {
 
         if (
-            !status.connected ||
-            !status.streaming
+            status.connected
+            && !status.streaming
         ) {
 
-            if (
-                frameTimer.current !== null
-            ) {
-
-                window.clearInterval(
-                    frameTimer.current
-                );
-
-                frameTimer.current = null;
-            }
-
-            return;
-        }
-
-
-        frameTimer.current =
-            window.setInterval(
-                () => {
-
-                    setFrameVersion(
-                        current =>
-                            current + 1
-                    );
-
-                },
-                200
+            setStillVersion(
+                current =>
+                    current + 1
             );
 
-
-        return () => {
-
-            if (
-                frameTimer.current !== null
-            ) {
-
-                window.clearInterval(
-                    frameTimer.current
-                );
-
-                frameTimer.current =
-                    null;
-            }
-
-        };
+        }
 
     }, [
         status.connected,
@@ -296,44 +219,13 @@ export default function CameraWidget({
     ]);
 
 
+    // =========================================================
+    // Connection
+    // =========================================================
+
     async function handleConnection() {
-    
-            setLoading(true);
-    
-            try {
-    
-                if (status?.connected) {
-                    await disconnectCamera();
-                } else {
-                    await connectCamera();
-                }
-    
-            } catch (error) {
-    
-                console.error(
-                    "Unable to change camera connection:",
-                    error
-                );
-    
-            } finally {
-    
-                /*
-                 * Always ask the backend for the real state.
-                 */
-                await updateStatus();
-    
-                setLoading(false);
-    
-            }
-        }
 
-
-    async function handleStartStream() {
-
-        if (
-            loading ||
-            !status.connected
-        ) {
+        if (loading) {
             return;
         }
 
@@ -344,7 +236,86 @@ export default function CameraWidget({
 
         try {
 
+            if (status.connected) {
+
+                /*
+                 * Stop acquisition before
+                 * disconnecting.
+                 */
+                if (status.streaming) {
+
+                    await stopCameraStream();
+
+                }
+
+
+                await disconnectCamera();
+
+            } else {
+
+                await connectCamera();
+
+            }
+
+        } catch (err) {
+
+            const message =
+                err instanceof Error
+                    ? err.message
+                    : (
+                        "Unable to change "
+                        + "camera connection"
+                    );
+
+
+            console.error(
+                message
+            );
+
+
+            setError(
+                message
+            );
+
+        } finally {
+
+            await refreshStatus();
+
+            setLoading(false);
+
+        }
+    }
+
+
+    // =========================================================
+    // Live acquisition
+    // =========================================================
+
+    async function handleStartStream() {
+
+        if (
+            loading ||
+            !status.connected ||
+            status.streaming
+        ) {
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+
+        try {
+
             await startCameraStream();
+
+            /*
+            * Force the browser to open a completely
+            * new MJPEG HTTP connection.
+            */
+            setStreamVersion(
+                current =>
+                    current + 1
+            );
 
             await refreshStatus();
 
@@ -355,7 +326,9 @@ export default function CameraWidget({
                     ? err.message
                     : "Unable to start live view";
 
-            setError(message);
+            setError(
+                message
+            );
 
         } finally {
 
@@ -364,12 +337,12 @@ export default function CameraWidget({
         }
     }
 
-
     async function handleStopStream() {
 
         if (
             loading ||
-            !status.connected
+            !status.connected ||
+            !status.streaming
         ) {
             return;
         }
@@ -385,12 +358,12 @@ export default function CameraWidget({
 
             await refreshStatus();
 
+
             /*
-             * Refresh once more after stopping
-             * so the final acquired frame stays
-             * visible.
+             * Request a new still frame after
+             * the stream has stopped.
              */
-            setFrameVersion(
+            setStillVersion(
                 current =>
                     current + 1
             );
@@ -402,7 +375,10 @@ export default function CameraWidget({
                     ? err.message
                     : "Unable to stop live view";
 
-            setError(message);
+
+            setError(
+                message
+            );
 
         } finally {
 
@@ -412,15 +388,53 @@ export default function CameraWidget({
     }
 
 
+    // =========================================================
+    // Single capture
+    // =========================================================
+
+    function handleSingleFrame() {
+
+        if (
+            loading ||
+            !status.connected ||
+            status.streaming
+        ) {
+            return;
+        }
+
+
+        /*
+         * /api/camera/frame performs the
+         * synchronous camera capture.
+         *
+         * Updating the query parameter forces
+         * the browser to request a new image.
+         */
+        setStillVersion(
+            current =>
+                current + 1
+        );
+    }
+
+
+    // =========================================================
+    // Exposure
+    // =========================================================
+
     async function handleExposure() {
 
-        if (!status.connected) {
+        if (
+            loading ||
+            !status.connected
+        ) {
             return;
         }
 
 
         const value =
-            Number(exposure);
+            Number(
+                exposure
+            );
 
 
         if (
@@ -429,7 +443,10 @@ export default function CameraWidget({
         ) {
 
             setError(
-                "Exposure must be a valid positive number."
+                (
+                    "Exposure must be a "
+                    + "valid positive number."
+                )
             );
 
             return;
@@ -446,6 +463,7 @@ export default function CameraWidget({
                 value
             );
 
+
             await refreshStatus();
 
         } catch (err) {
@@ -455,7 +473,10 @@ export default function CameraWidget({
                     ? err.message
                     : "Unable to set exposure";
 
-            setError(message);
+
+            setError(
+                message
+            );
 
         } finally {
 
@@ -465,18 +486,29 @@ export default function CameraWidget({
     }
 
 
+    // =========================================================
+    // Gain
+    // =========================================================
+
     async function handleGain() {
 
-        if (!status.connected) {
+        if (
+            loading ||
+            !status.connected
+        ) {
             return;
         }
 
 
         const value =
-            Number(gain);
+            Number(
+                gain
+            );
 
 
-        if (!Number.isFinite(value)) {
+        if (
+            !Number.isFinite(value)
+        ) {
 
             setError(
                 "Gain must be a valid number."
@@ -496,6 +528,7 @@ export default function CameraWidget({
                 value
             );
 
+
             await refreshStatus();
 
         } catch (err) {
@@ -505,7 +538,10 @@ export default function CameraWidget({
                     ? err.message
                     : "Unable to set gain";
 
-            setError(message);
+
+            setError(
+                message
+            );
 
         } finally {
 
@@ -515,28 +551,34 @@ export default function CameraWidget({
     }
 
 
-    function handleSingleFrame() {
-
-        if (
-            !status.connected ||
-            status.streaming
-        ) {
-            return;
-        }
-
-
-        setFrameVersion(
-            current =>
-                current + 1
-        );
-    }
-
+    // =========================================================
+    // Image URL
+    // =========================================================
 
     /*
-     * Query parameter prevents browser caching.
+     * Live mode:
+     *
+     *     /api/camera/stream
+     *
+     * is one continuous MJPEG connection.
+     *
+     *
+     * Still mode:
+     *
+     *     /api/camera/frame
+     *
+     * performs one synchronous capture.
      */
-    const frameUrl =
-        `/api/camera/frame?v=${frameVersion}`;
+    const imageUrl =
+        status.streaming
+            ? (
+                "/api/camera/stream"
+                + `?v=${streamVersion}`
+            )
+            : (
+                "/api/camera/frame"
+                + `?v=${stillVersion}`
+            );
 
 
     return (
@@ -587,8 +629,12 @@ export default function CameraWidget({
                         {status.connected ? (
 
                             <img
-                                key={frameVersion}
-                                src={frameUrl}
+                                key={
+                                    status.streaming
+                                        ? `stream-${streamVersion}`
+                                        : `still-${stillVersion}`
+                                }
+                                src={imageUrl}
                                 alt="Mako camera feed"
 
                                 className="
@@ -598,24 +644,17 @@ export default function CameraWidget({
                                 "
 
                                 onError={(event) => {
-
-                                    /*
-                                     * Hide broken image icon while
-                                     * waiting for first stream frame.
-                                     */
-                                    event.currentTarget.style.visibility =
-                                        "hidden";
-
+                                    event.currentTarget
+                                        .style.visibility =
+                                            "hidden";
                                 }}
 
                                 onLoad={(event) => {
-
-                                    event.currentTarget.style.visibility =
-                                        "visible";
-
+                                    event.currentTarget
+                                        .style.visibility =
+                                            "visible";
                                 }}
                             />
-
                         ) : (
 
                             <div
@@ -633,6 +672,7 @@ export default function CameraWidget({
                                     "
                                 />
 
+
                                 <p
                                     className="
                                         text-sm
@@ -641,6 +681,7 @@ export default function CameraWidget({
                                 >
                                     No camera feed
                                 </p>
+
 
                                 <p
                                     className="
@@ -656,6 +697,8 @@ export default function CameraWidget({
 
                         )}
 
+
+                        {/* Live indicator */}
 
                         {status.streaming && (
 
@@ -685,6 +728,7 @@ export default function CameraWidget({
                                     "
                                 />
 
+
                                 <span
                                     className="
                                         text-xs
@@ -702,6 +746,8 @@ export default function CameraWidget({
                     </div>
 
 
+                    {/* Camera state */}
+
                     <div
                         className="
                             mt-3
@@ -715,12 +761,15 @@ export default function CameraWidget({
                     >
 
                         <span>
-                            {status.streaming
-                                ? "Live acquisition"
-                                : status.connected
-                                    ? "Single frame mode"
-                                    : "Offline"}
+                            {
+                                status.streaming
+                                    ? "Live acquisition"
+                                    : status.connected
+                                        ? "Single frame mode"
+                                        : "Offline"
+                            }
                         </span>
+
 
                         <span>
                             Frames: {
@@ -749,12 +798,25 @@ export default function CameraWidget({
 
                     {/* Connection */}
 
-                    <div className="flex items-center gap-3">
+                    <div
+                        className="
+                            flex
+                            items-center
+                            gap-3
+                        "
+                    >
 
                         <button
                             type="button"
-                            onClick={handleConnection}
-                            disabled={loading}
+
+                            onClick={
+                                handleConnection
+                            }
+
+                            disabled={
+                                loading
+                            }
+
                             className="
                                 rounded-lg
                                 border
@@ -771,11 +833,15 @@ export default function CameraWidget({
                                 disabled:opacity-50
                             "
                         >
-                            {loading
-                                ? "Working..."
-                                : status?.connected
-                                    ? "Disconnect"
-                                    : "Connect"}
+
+                            {
+                                loading
+                                    ? "Working..."
+                                    : status.connected
+                                        ? "Disconnect"
+                                        : "Connect"
+                            }
+
                         </button>
 
 
@@ -798,19 +864,26 @@ export default function CameraWidget({
                                     h-2.5
                                     w-2.5
                                     rounded-full
-
                                     ${
-                                        status?.connected
+                                        status.connected
                                             ? "bg-green-500"
                                             : "bg-red-500"
                                     }
                                 `}
                             />
 
-                            <span className="text-sm text-slate-300">
-                                {status?.connected
-                                    ? "Connected"
-                                    : "Disconnected"}
+
+                            <span
+                                className="
+                                    text-sm
+                                    text-slate-300
+                                "
+                            >
+                                {
+                                    status.connected
+                                        ? "Connected"
+                                        : "Disconnected"
+                                }
                             </span>
 
                         </div>
@@ -818,7 +891,7 @@ export default function CameraWidget({
                     </div>
 
 
-                    {/* Live view */}
+                    {/* Acquisition */}
 
                     <div
                         className="
@@ -1023,7 +1096,9 @@ export default function CameraWidget({
                                 <input
                                     type="number"
 
-                                    value={exposure}
+                                    value={
+                                        exposure
+                                    }
 
                                     onChange={
                                         event =>
@@ -1052,6 +1127,7 @@ export default function CameraWidget({
                                         disabled:opacity-50
                                     "
                                 />
+
 
                                 <span
                                     className="
@@ -1146,7 +1222,9 @@ export default function CameraWidget({
 
                                     step="0.1"
 
-                                    value={gain}
+                                    value={
+                                        gain
+                                    }
 
                                     onChange={
                                         event =>
@@ -1175,6 +1253,7 @@ export default function CameraWidget({
                                         disabled:opacity-50
                                     "
                                 />
+
 
                                 <span
                                     className="
@@ -1263,6 +1342,7 @@ export default function CameraWidget({
                                 }
                             />
 
+
                             <InfoRow
                                 label="Serial"
                                 value={
@@ -1271,6 +1351,7 @@ export default function CameraWidget({
                                     "—"
                                 }
                             />
+
 
                             <InfoRow
                                 label="Device ID"
@@ -1285,6 +1366,8 @@ export default function CameraWidget({
 
                     </div>
 
+
+                    {/* Error */}
 
                     {error && (
 
@@ -1339,6 +1422,7 @@ function InfoRow({
             >
                 {label}
             </span>
+
 
             <span
                 className="

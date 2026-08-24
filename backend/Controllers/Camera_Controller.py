@@ -22,6 +22,7 @@ class CameraController:
                 self.camera.connect()
             )
 
+
             if not connected:
 
                 self.logger.error(
@@ -39,7 +40,7 @@ class CameraController:
 
             self.logger.success(
                 (
-                    f"Camera connected: "
+                    "Camera connected: "
                     f"{info['model']} "
                     f"({info['serial']})"
                 ),
@@ -66,14 +67,30 @@ class CameraController:
 
         try:
 
-            self.camera.disconnect()
-
-            self.logger.info(
-                "Camera disconnected",
-                source="CAMERA"
+            result = (
+                self.camera.disconnect()
             )
 
-            return True
+
+            if result:
+
+                self.logger.info(
+                    "Camera disconnected",
+                    source="CAMERA"
+                )
+
+            else:
+
+                self.logger.warning(
+                    (
+                        "Camera disconnected with "
+                        "one or more cleanup errors"
+                    ),
+                    source="CAMERA"
+                )
+
+
+            return result
 
 
         except Exception as e:
@@ -119,6 +136,7 @@ class CameraController:
                 self.camera.get_exposure()
             )
 
+
         except Exception as e:
 
             self.logger.error(
@@ -145,6 +163,7 @@ class CameraController:
                 )
             )
 
+
             self.logger.info(
                 (
                     "Camera exposure set to "
@@ -152,6 +171,7 @@ class CameraController:
                 ),
                 source="CAMERA"
             )
+
 
             return result
 
@@ -181,6 +201,7 @@ class CameraController:
                 self.camera.get_gain()
             )
 
+
         except Exception as e:
 
             self.logger.error(
@@ -207,6 +228,7 @@ class CameraController:
                 )
             )
 
+
             self.logger.info(
                 (
                     "Camera gain set to "
@@ -214,6 +236,7 @@ class CameraController:
                 ),
                 source="CAMERA"
             )
+
 
             return result
 
@@ -232,7 +255,72 @@ class CameraController:
 
 
     # =========================================================
-    # Acquisition
+    # Frame rate
+    # =========================================================
+
+    def get_frame_rate(self):
+
+        try:
+
+            return (
+                self.camera.get_frame_rate()
+            )
+
+
+        except Exception as e:
+
+            self.logger.error(
+                (
+                    "Unable to read camera "
+                    f"frame rate: {e}"
+                ),
+                source="CAMERA"
+            )
+
+            raise
+
+
+    def set_frame_rate(
+        self,
+        fps: float
+    ):
+
+        try:
+
+            result = (
+                self.camera.set_frame_rate(
+                    fps
+                )
+            )
+
+
+            self.logger.info(
+                (
+                    "Camera frame rate set to "
+                    f"{result:.2f} FPS"
+                ),
+                source="CAMERA"
+            )
+
+
+            return result
+
+
+        except Exception as e:
+
+            self.logger.error(
+                (
+                    "Unable to set camera "
+                    f"frame rate: {e}"
+                ),
+                source="CAMERA"
+            )
+
+            raise
+
+
+    # =========================================================
+    # Capture
     # =========================================================
 
     def capture_jpeg(self):
@@ -240,8 +328,11 @@ class CameraController:
         try:
 
             return (
-                self.camera.capture_jpeg()
+                self.camera.capture_jpeg(
+                    quality=90
+                )
             )
+
 
         except Exception as e:
 
@@ -254,6 +345,7 @@ class CameraController:
             )
 
             raise
+
 
     # =========================================================
     # Streaming
@@ -269,18 +361,35 @@ class CameraController:
                     "Camera not connected"
                 )
 
+
             if self.camera.is_streaming():
 
                 return True
 
-            self.camera.start_streaming()
+
+            result = (
+                self.camera.start_streaming()
+            )
+
+
+            if not result:
+
+                raise RuntimeError(
+                    (
+                        "Camera failed to "
+                        "start streaming"
+                    )
+                )
+
 
             self.logger.success(
                 "Camera live acquisition started",
                 source="CAMERA"
             )
 
+
             return True
+
 
         except Exception as e:
 
@@ -300,16 +409,33 @@ class CameraController:
         try:
 
             if not self.camera.is_streaming():
+
                 return True
 
-            self.camera.stop_streaming()
+
+            result = (
+                self.camera.stop_streaming()
+            )
+
+
+            if not result:
+
+                raise RuntimeError(
+                    (
+                        "Camera failed to "
+                        "stop streaming"
+                    )
+                )
+
 
             self.logger.info(
                 "Camera live acquisition stopped",
                 source="CAMERA"
             )
 
+
             return True
+
 
         except Exception as e:
 
@@ -338,6 +464,7 @@ class CameraController:
             return (
                 self.camera.get_latest_jpeg()
             )
+
 
         except Exception as e:
 
