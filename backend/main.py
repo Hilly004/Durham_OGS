@@ -140,9 +140,8 @@ from Controllers.Camera_Controller import (
     CameraController,
 )
 
-from Hardware.Camera.Camera_Commands import (
-    MakoCamera,
-)
+from Hardware.Camera.ZWO_Camera import ZWOCamera
+
 
 # ============================================================
 # LIFESPAN
@@ -289,12 +288,7 @@ set_weather_controller(
 # CAMERA
 # ============================================================
 
-camera_driver = MakoCamera(
-    camera_id=(
-        startup_settings.camera_id
-        or None
-    )
-)
+camera_driver = ZWOCamera(camera_id='0')
 
 camera_controller = CameraController(
     camera_driver,

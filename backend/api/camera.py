@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 from fastapi import (
     APIRouter,
@@ -63,7 +64,7 @@ class ExposureRequest(BaseModel):
 
 
 class GainRequest(BaseModel):
-    gain_db: float
+    gain: float
 
 
 class FrameRateRequest(BaseModel):
@@ -246,14 +247,12 @@ def get_gain():
         get_controller()
     )
 
-
     try:
 
         gain = (
             camera_controller
             .get_gain()
         )
-
 
     except ConnectionError:
 
@@ -262,7 +261,6 @@ def get_gain():
             detail="Camera not connected"
         )
 
-
     except Exception as e:
 
         raise HTTPException(
@@ -270,10 +268,9 @@ def get_gain():
             detail=str(e)
         )
 
-
     return {
         "success": True,
-        "gain_db": gain
+        "gain": gain
     }
 
 
@@ -286,16 +283,14 @@ def set_gain(
         get_controller()
     )
 
-
     try:
 
         gain = (
             camera_controller
             .set_gain(
-                request.gain_db
+                request.gain
             )
         )
-
 
     except ConnectionError:
 
@@ -304,14 +299,12 @@ def set_gain(
             detail="Camera not connected"
         )
 
-
     except ValueError as e:
 
         raise HTTPException(
             status_code=400,
             detail=str(e)
         )
-
 
     except Exception as e:
 
@@ -320,13 +313,10 @@ def set_gain(
             detail=str(e)
         )
 
-
     return {
         "success": True,
-        "gain_db": gain
+        "gain": gain
     }
-
-
 # =========================================================
 # Frame rate
 # =========================================================
@@ -730,4 +720,124 @@ async def stream_camera():
 
             "Pragma": "no-cache",
         }
+    )
+
+@router.get("/live")
+def camera_live():
+
+    camera_controller = (
+        get_controller()
+    )
+
+    if (
+        not camera_controller
+        .is_connected()
+    ):
+
+        raise HTTPException(
+            status_code=503,
+            detail="Camera not connected"
+        )
+
+
+    if (
+        not camera_controller
+        .is_streaming()
+    ):
+
+        raise HTTPException(
+            status_code=409,
+            detail="Camera stream is not running"
+        )
+
+
+    def generate():
+
+        last_frame_count = -1
+
+        while (
+            camera_controller
+            .is_connected()
+            and
+            camera_controller
+            .is_streaming()
+        ):
+
+            try:
+
+                frame_count = (
+                    camera_controller
+                    .get_frame_count()
+                )
+
+
+                #
+                # Do not resend the same frame.
+                #
+                if (
+                    frame_count
+                    ==
+                    last_frame_count
+                ):
+
+                    time.sleep(
+                        0.01
+                    )
+
+                    continue
+
+
+                frame = (
+                    camera_controller
+                    .get_latest_jpeg()
+                )
+
+
+                if frame is None:
+
+                    time.sleep(
+                        0.01
+                    )
+
+                    continue
+
+
+                last_frame_count = (
+                    frame_count
+                )
+
+
+                yield (
+                    b"--frame\r\n"
+                    b"Content-Type: image/jpeg\r\n"
+                    b"Cache-Control: no-cache\r\n"
+                    b"\r\n"
+                    +
+                    frame
+                    +
+                    b"\r\n"
+                )
+
+
+            except Exception:
+
+                break
+
+
+    return StreamingResponse(
+        generate(),
+        media_type=(
+            "multipart/x-mixed-replace;"
+            " boundary=frame"
+        ),
+        headers={
+            "Cache-Control":
+                "no-store, no-cache, must-revalidate, max-age=0",
+
+            "Pragma":
+                "no-cache",
+
+            "Expires":
+                "0",
+        },
     )

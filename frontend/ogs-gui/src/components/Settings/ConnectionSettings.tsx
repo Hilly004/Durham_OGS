@@ -47,9 +47,41 @@ export default function ConnectionSettings({ settings, onChange }: Props) {
                     <button className={`${button} self-end`} disabled={testing !== null} onClick={() => run("weather", () => testWeatherConnection(settings.weather_port, settings.weather_baudrate))}>{testing === "weather" ? "Testing..." : "Test"}</button>
                 </div>
             </div>
-            <label className="block text-sm text-slate-300">Camera ID
-                <input className={input} value={settings.camera_id} onChange={e => onChange("camera_id", e.target.value)} placeholder="Vimba camera ID" />
-            </label>
+            <label>Camera Type</label>
+
+                <select
+                    value={settings.camera_type}
+                    onChange={(event) =>
+                        onChange(
+                            "camera_type",
+                            event.target.value
+                        )
+                    }
+                >
+                    <option value="allied">
+                        Allied Vision
+                    </option>
+
+                    <option value="zwo">
+                        ZWO ASI
+                    </option>
+                </select>
+            <label>Camera ID</label>
+
+                <input
+                    value={settings.camera_id}
+                    onChange={(event) =>
+                        onChange(
+                            "camera_id",
+                            event.target.value
+                        )
+                    }
+                    placeholder={
+                        settings.camera_type === "zwo"
+                            ? "ZWO camera index, e.g. 0"
+                            : "Vimba camera ID"
+                    }
+                />
             {message && <div className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-300">{message}</div>}
             <p className="text-xs text-slate-500">Disconnect a device before saving a changed live connection address.</p>
         </section>

@@ -42,6 +42,9 @@ class SettingsController:
         camera_changed = (
             values.get("camera_id")
             != current.camera_id
+            or
+            values.get("camera_type")
+            != current.camera_type
         )
 
         if mount_changed and self.mount_connection and self.mount_connection.connected:

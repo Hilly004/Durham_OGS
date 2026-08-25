@@ -447,6 +447,7 @@ def show_menu():
     print()
     print("Status")
     print("  3  - Read all status values")
+    print(" 3.5  - Read all coils")
 
     print()
     print("Whole dome")
@@ -489,6 +490,30 @@ def show_menu():
     print()
 
 
+def dump_coils():
+
+    print("\nDOME COILS")
+    print("-" * 40)
+
+    for address in range(0, 41):
+
+        try:
+
+            value = connection.read_coil(
+                address
+            )
+
+            print(
+                f"{address:02d}: {value}"
+            )
+
+        except Exception as e:
+
+            print(
+                f"{address:02d}: ERROR - {e}"
+            )
+
+
 # =========================================================
 # Main Program
 # =========================================================
@@ -509,6 +534,9 @@ def main():
 
         elif choice == "3":
             show_status()
+
+        elif choice == "3.5":
+            dump_coils()
 
         elif choice == "4":
             run_command(

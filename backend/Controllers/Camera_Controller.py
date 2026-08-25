@@ -22,7 +22,6 @@ class CameraController:
                 self.camera.connect()
             )
 
-
             if not connected:
 
                 self.logger.error(
@@ -32,11 +31,9 @@ class CameraController:
 
                 return False
 
-
             info = (
                 self.camera.get_info()
             )
-
 
             self.logger.success(
                 (
@@ -48,7 +45,6 @@ class CameraController:
             )
 
             return True
-
 
         except Exception as e:
 
@@ -71,7 +67,6 @@ class CameraController:
                 self.camera.disconnect()
             )
 
-
             if result:
 
                 self.logger.info(
@@ -89,9 +84,7 @@ class CameraController:
                     source="CAMERA"
                 )
 
-
             return result
-
 
         except Exception as e:
 
@@ -136,7 +129,6 @@ class CameraController:
                 self.camera.get_exposure()
             )
 
-
         except Exception as e:
 
             self.logger.error(
@@ -163,18 +155,15 @@ class CameraController:
                 )
             )
 
-
             self.logger.info(
                 (
                     "Camera exposure set to "
-                    f"{result:.1f} µs"
+                    f"{result:.0f} µs"
                 ),
                 source="CAMERA"
             )
 
-
             return result
-
 
         except Exception as e:
 
@@ -201,7 +190,6 @@ class CameraController:
                 self.camera.get_gain()
             )
 
-
         except Exception as e:
 
             self.logger.error(
@@ -217,29 +205,26 @@ class CameraController:
 
     def set_gain(
         self,
-        gain_db: float
+        gain: float
     ):
 
         try:
 
             result = (
                 self.camera.set_gain(
-                    gain_db
+                    gain
                 )
             )
-
 
             self.logger.info(
                 (
                     "Camera gain set to "
-                    f"{result:.2f} dB"
+                    f"{result:.0f}"
                 ),
                 source="CAMERA"
             )
 
-
             return result
-
 
         except Exception as e:
 
@@ -265,7 +250,6 @@ class CameraController:
             return (
                 self.camera.get_frame_rate()
             )
-
 
         except Exception as e:
 
@@ -293,7 +277,6 @@ class CameraController:
                 )
             )
 
-
             self.logger.info(
                 (
                     "Camera frame rate set to "
@@ -302,9 +285,7 @@ class CameraController:
                 source="CAMERA"
             )
 
-
             return result
-
 
         except Exception as e:
 
@@ -318,6 +299,11 @@ class CameraController:
 
             raise
 
+    def get_frame_count(self):
+
+        return (
+            self.camera.get_frame_count()
+        )
 
     # =========================================================
     # Capture
@@ -332,7 +318,6 @@ class CameraController:
                     quality=90
                 )
             )
-
 
         except Exception as e:
 
@@ -361,16 +346,13 @@ class CameraController:
                     "Camera not connected"
                 )
 
-
             if self.camera.is_streaming():
 
                 return True
 
-
             result = (
                 self.camera.start_streaming()
             )
-
 
             if not result:
 
@@ -381,15 +363,12 @@ class CameraController:
                     )
                 )
 
-
             self.logger.success(
                 "Camera live acquisition started",
                 source="CAMERA"
             )
 
-
             return True
-
 
         except Exception as e:
 
@@ -412,11 +391,9 @@ class CameraController:
 
                 return True
 
-
             result = (
                 self.camera.stop_streaming()
             )
-
 
             if not result:
 
@@ -427,15 +404,12 @@ class CameraController:
                     )
                 )
 
-
             self.logger.info(
                 "Camera live acquisition stopped",
                 source="CAMERA"
             )
 
-
             return True
-
 
         except Exception as e:
 
@@ -464,7 +438,6 @@ class CameraController:
             return (
                 self.camera.get_latest_jpeg()
             )
-
 
         except Exception as e:
 

@@ -14,7 +14,9 @@ export interface CameraStatusData {
 
     exposure: number | null;
     gain: number | null;
+    gain_unit?: string | null;
 
+    frame_rate?: number | null;
     frame_count: number;
 }
 
@@ -32,16 +34,46 @@ interface StreamStatusResponse {
 }
 
 
-export async function getCameraStatus(): Promise<CameraStatusData> {
+async function getErrorMessage(
+    response: Response,
+    fallback: string
+): Promise<string> {
+
+    try {
+
+        const data =
+            await response.json();
+
+        return (
+            typeof data?.detail === "string"
+                ? data.detail
+                : fallback
+        );
+
+    } catch {
+
+        return fallback;
+
+    }
+}
+
+
+export async function getCameraStatus():
+Promise<CameraStatusData> {
 
     const response = await fetch(
         "/api/camera/status"
     );
 
     if (!response.ok) {
+
         throw new Error(
-            "Failed to get camera status"
+            await getErrorMessage(
+                response,
+                "Failed to get camera status"
+            )
         );
+
     }
 
     const result: CameraStatusResponse =
@@ -51,7 +83,8 @@ export async function getCameraStatus(): Promise<CameraStatusData> {
 }
 
 
-export async function connectCamera(): Promise<void> {
+export async function connectCamera():
+Promise<void> {
 
     const response = await fetch(
         "/api/camera/connect",
@@ -62,27 +95,19 @@ export async function connectCamera(): Promise<void> {
 
     if (!response.ok) {
 
-        let message =
-            "Failed to connect camera";
+        throw new Error(
+            await getErrorMessage(
+                response,
+                "Failed to connect camera"
+            )
+        );
 
-        try {
-
-            const error =
-                await response.json();
-
-            message =
-                error.detail ?? message;
-
-        } catch {
-            // Keep default message
-        }
-
-        throw new Error(message);
     }
 }
 
 
-export async function disconnectCamera(): Promise<void> {
+export async function disconnectCamera():
+Promise<void> {
 
     const response = await fetch(
         "/api/camera/disconnect",
@@ -92,14 +117,23 @@ export async function disconnectCamera(): Promise<void> {
     );
 
     if (!response.ok) {
+
         throw new Error(
-            "Failed to disconnect camera"
+            await getErrorMessage(
+                response,
+                "Failed to disconnect camera"
+            )
         );
+
     }
 }
 
+export function getCameraLiveUrl(): string {
+    return "/api/camera/live";
+}
 
-export async function startCameraStream(): Promise<void> {
+export async function startCameraStream():
+Promise<void> {
 
     const response = await fetch(
         "/api/camera/stream/start",
@@ -110,27 +144,19 @@ export async function startCameraStream(): Promise<void> {
 
     if (!response.ok) {
 
-        let message =
-            "Failed to start camera stream";
+        throw new Error(
+            await getErrorMessage(
+                response,
+                "Failed to start camera stream"
+            )
+        );
 
-        try {
-
-            const error =
-                await response.json();
-
-            message =
-                error.detail ?? message;
-
-        } catch {
-            // Keep default
-        }
-
-        throw new Error(message);
     }
 }
 
 
-export async function stopCameraStream(): Promise<void> {
+export async function stopCameraStream():
+Promise<void> {
 
     const response = await fetch(
         "/api/camera/stream/stop",
@@ -141,36 +167,33 @@ export async function stopCameraStream(): Promise<void> {
 
     if (!response.ok) {
 
-        let message =
-            "Failed to stop camera stream";
+        throw new Error(
+            await getErrorMessage(
+                response,
+                "Failed to stop camera stream"
+            )
+        );
 
-        try {
-
-            const error =
-                await response.json();
-
-            message =
-                error.detail ?? message;
-
-        } catch {
-            // Keep default
-        }
-
-        throw new Error(message);
     }
 }
 
 
-export async function getCameraStreamStatus(): Promise<StreamStatusResponse> {
+export async function getCameraStreamStatus():
+Promise<StreamStatusResponse> {
 
     const response = await fetch(
         "/api/camera/stream/status"
     );
 
     if (!response.ok) {
+
         throw new Error(
-            "Failed to get camera stream status"
+            await getErrorMessage(
+                response,
+                "Failed to get camera stream status"
+            )
         );
+
     }
 
     return response.json();
@@ -198,28 +221,19 @@ export async function setCameraExposure(
 
     if (!response.ok) {
 
-        let message =
-            "Failed to set camera exposure";
+        throw new Error(
+            await getErrorMessage(
+                response,
+                "Failed to set camera exposure"
+            )
+        );
 
-        try {
-
-            const error =
-                await response.json();
-
-            message =
-                error.detail ?? message;
-
-        } catch {
-            // Keep default
-        }
-
-        throw new Error(message);
     }
 }
 
 
 export async function setCameraGain(
-    gainDb: number
+    gain: number
 ): Promise<void> {
 
     const response = await fetch(
@@ -228,32 +242,24 @@ export async function setCameraGain(
             method: "POST",
 
             headers: {
-                "Content-Type": "application/json",
+                "Content-Type":
+                    "application/json",
             },
 
             body: JSON.stringify({
-                gain_db: gainDb,
+                gain,
             }),
         }
     );
 
     if (!response.ok) {
 
-        let message =
-            "Failed to set camera gain";
+        throw new Error(
+            await getErrorMessage(
+                response,
+                "Failed to set camera gain"
+            )
+        );
 
-        try {
-
-            const error =
-                await response.json();
-
-            message =
-                error.detail ?? message;
-
-        } catch {
-            // Keep default
-        }
-
-        throw new Error(message);
     }
 }

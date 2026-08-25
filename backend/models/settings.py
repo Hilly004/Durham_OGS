@@ -25,7 +25,17 @@ class ObservatorySettings(Base):
     weather_port: Mapped[str] = mapped_column(String, nullable=False, default="/dev/cu.usbserial")
     weather_baudrate: Mapped[int] = mapped_column(Integer, nullable=False, default=19200)
 
-    camera_id: Mapped[str] = mapped_column(String, nullable=False, default="")
+    #camera_type: Mapped[str] = mapped_column(
+    #    String,
+    #    nullable=False,
+    #    default="allied",
+    #)
+
+    camera_id: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+        default="",
+    )
 
     # Safety
     max_wind_speed: Mapped[float] = mapped_column(Float, nullable=False, default=40.0)

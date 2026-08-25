@@ -370,72 +370,98 @@ class MountController:
     ):
 
         if not self.mount.is_connected():
-
             raise ConnectionError(
                 "Mount not connected"
             )
 
+        # ------------------------------------------------------------
+        # Check Gstat
+        # ------------------------------------------------------------
 
-        if (
-            step_arcsec < 1
-            or
-            step_arcsec > 3600
-        ):
+        mount_status_raw = (
+            self.mount.get_mount_status()
+        )
 
-            raise ValueError(
-                (
-                    "Nudge step must be "
-                    "between 1 and 3600 arcseconds"
-                )
+        mount_status = int(
+            str(mount_status_raw)
+            .strip()
+            .rstrip("#")
+        )
+
+        allowed_states = {
+            0,  # tracking
+            1,  # stopped
+            7,  # not tracking / stationary
+        }
+
+        if mount_status not in allowed_states:
+
+            raise RuntimeError(
+                f"Cannot nudge mount in state {mount_status}"
             )
 
 
-        direction = (
-            direction.lower()
+        # ------------------------------------------------------------
+        # Make sure any previous slew is finished
+        # ------------------------------------------------------------
+
+        slew_response = (
+            self.mount.get_slew_status()
         )
 
+        self.logger.info(
+            f"Pre-nudge slew status: {slew_response}",
+            source="MOUNT",
+        )
+
+        if not slew_response:
+
+            raise RuntimeError(
+                "Cannot nudge: mount movement has not completed"
+            )
+
+
+        # ------------------------------------------------------------
+        # Calculate nudge
+        # ------------------------------------------------------------
+
+        direction = direction.lower()
 
         if direction == "north":
 
             ra_offset = 0
             dec_offset = step_arcsec
 
-
         elif direction == "south":
 
             ra_offset = 0
             dec_offset = -step_arcsec
-
 
         elif direction == "east":
 
             ra_offset = step_arcsec
             dec_offset = 0
 
-
         elif direction == "west":
 
             ra_offset = -step_arcsec
             dec_offset = 0
 
-
         else:
 
             raise ValueError(
-                (
-                    "Invalid nudge direction: "
-                    f"{direction}"
-                )
+                f"Invalid nudge direction: {direction}"
             )
 
 
-        response = (
-            self.mount.nudge_offset(
-                ra_offset,
-                dec_offset
-            )
+        # ------------------------------------------------------------
+        # Send nudge
+        # ------------------------------------------------------------
+
+        response = self.mount.nudge_offset(
+            ra_offset,
+            dec_offset
         )
-
 
         self.logger.info(
             (
@@ -446,22 +472,7 @@ class MountController:
             source="MOUNT",
         )
 
-
-        if response not in (
-            "0",
-            "0#",
-        ):
-
-            raise RuntimeError(
-                (
-                    "Mount rejected nudge: "
-                    f"{response}"
-                )
-            )
-
-
-        return True
-
+        return response
 
     # ============================================================
     # Slewing / tracking

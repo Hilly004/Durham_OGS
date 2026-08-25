@@ -990,15 +990,81 @@ class TenMicronMount:
         message = ':NUDGE' + direction + '#'
         return self.query(message)
 
-    def nudge_offset(self, ra_offset, dec_offset):
-        """Move to a point offset from the current coordinates (for centering objects after a slew).
-        Format: ra_offset, dec_offset = signed arcseconds, e.g. '+120', '-45' (RA/Az axis, Dec/Alt axis).
-        Returns: '0' no error, "1Object Below Horizon #", "2Object Below Higher #",
-        "3Cannot Perform Nudge #". Available from v2.7.4.
+    def nudge_offset(
+        self,
+        ra_offset,
+        dec_offset
+    ):
         """
-        message = ':NUDGE' + str(ra_offset) + ',' + str(dec_offset) + '#'
-        return self.query(message)
+        Move to a point offset from the current coordinates.
 
+        ra_offset:
+            Signed RA/Azimuth offset in arcseconds.
+
+        dec_offset:
+            Signed Dec/Altitude offset in arcseconds.
+
+        TenMicron format:
+            :NUDGEsXXXX,sYYYY#
+
+        Examples:
+            :NUDGE+0030,+0000#
+            :NUDGE-0030,+0000#
+            :NUDGE+0000,+0030#
+            :NUDGE+0000,-0030#
+
+        Returns:
+            0#  Success
+            1Object Below Horizon #
+            2Object Below Higher #
+            3Cannot Perform Nudge #
+        """
+
+        ra_offset = int(
+            round(ra_offset)
+        )
+
+        dec_offset = int(
+            round(dec_offset)
+        )
+
+        if (
+            abs(ra_offset) > 9999
+            or
+            abs(dec_offset) > 9999
+        ):
+            raise ValueError(
+                (
+                    "Nudge offsets must be "
+                    "between -9999 and +9999 arcsec"
+                )
+            )
+
+
+        ra_string = (
+            f"{ra_offset:+05d}"
+        )
+
+        dec_string = (
+            f"{dec_offset:+05d}"
+        )
+
+
+        message = (
+            f":NUDGE"
+            f"{ra_string},"
+            f"{dec_string}#"
+        )
+
+
+        print(
+            f"[MOUNT] Sending nudge: {message}"
+        )
+
+
+        return self.query(
+            message
+        )
 
 
     #########################################################################

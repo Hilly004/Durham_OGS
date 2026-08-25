@@ -13,6 +13,7 @@ class SettingsUpdate(BaseModel):
     dome_port: int = Field(ge=1, le=65535)
     weather_port: str
     weather_baudrate: int = Field(ge=300, le=1_000_000)
+    #camera_type: str = "allied"
     camera_id: str = ""
 
     max_wind_speed: float = Field(gt=0, le=200)

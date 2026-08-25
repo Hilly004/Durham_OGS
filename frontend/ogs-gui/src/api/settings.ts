@@ -1,3 +1,7 @@
+export type CameraType =
+    | 'allied'
+    | 'zwo';
+
 export interface ObservatorySettings {
     id: number;
     site_name: string;
@@ -10,6 +14,7 @@ export interface ObservatorySettings {
     dome_port: number;
     weather_port: string;
     weather_baudrate: number;
+    camera_type: CameraType;
     camera_id: string;
     max_wind_speed: number;
     max_humidity: number;
