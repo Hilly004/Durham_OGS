@@ -23,8 +23,8 @@ class TenMicronMount:
     def disconnect(self):
         return self.connection.disconnect()
     
-    def _query(self,command):
-        return self.connection.send_receive(command)
+    def _query(self,command,terminator):
+        return self.connection.send_receive(command,terminator)
 
 
 
@@ -619,8 +619,7 @@ class TenMicronMount:
         """
 
         response = (
-            self.connection
-            .send_receive_byte("\x06")
+            self._query("\x06", terminator = None)
         )
 
         if response is None:

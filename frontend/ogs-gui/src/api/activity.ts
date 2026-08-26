@@ -30,7 +30,7 @@ export async function getActivity(
 
     if (!response.ok) {
 
-        let detail = "";
+        let detail: string;
 
         try {
             const errorData = await response.json();

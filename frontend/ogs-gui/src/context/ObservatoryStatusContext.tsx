@@ -1,18 +1,29 @@
 import {
-    createContext,
     useCallback,
-    useContext,
     useEffect,
+    useRef,
     useState,
     type ReactNode,
 } from "react";
 
 import {
     getMountStatus,
+    getMountPosition,
+    getMountPosition_rd,
+} from "../api/mount";
+
+import type {
+    MountStatusData,
+    MountPosition,
+    MountPosition_rd,
 } from "../api/mount";
 
 import {
     getDomeStatus,
+} from "../api/dome";
+
+import type {
+    DomeStatusData,
 } from "../api/dome";
 
 import {
@@ -20,118 +31,410 @@ import {
 } from "../api/weather";
 
 import type {
-    MountStatusData,
-} from "../api/mount";
-
-import type {
-    DomeStatusData,
-} from "../api/dome";
-
-import type {
     WeatherStatusData,
 } from "../api/weather";
 
+import {
+    getCameraStatus,
+} from "../api/camera";
 
-export type ObservatoryState =
-    | "nominal"
-    | "degraded"
-    | "unsafe"
-    | "offline";
+import type {
+    CameraStatusData,
+} from "../api/camera";
+
+import {
+    ObservatoryStatusContext,
+} from "./observatoryStatusContext";
+
+import type {
+    ObservatoryState,
+} from "./observatoryStatusContext";
 
 
-interface ObservatoryStatusContextValue {
-
-    mountStatus:
-        MountStatusData | null;
-
-    domeStatus:
-        DomeStatusData | null;
-
-    weatherStatus:
-        WeatherStatusData | null;
-
-    observatoryState:
-        ObservatoryState;
-
-    refresh:
-        () => Promise<void>;
+interface Props {
+    children: ReactNode;
 }
 
 
-const ObservatoryStatusContext =
-    createContext<
-        ObservatoryStatusContextValue | undefined
-    >(undefined);
+const POLL_INTERVAL_MS =
+    2000;
+
+
+function calculateObservatoryState(
+    mountStatus: MountStatusData | null,
+    domeStatus: DomeStatusData | null,
+    weatherStatus: WeatherStatusData | null,
+    cameraStatus: CameraStatusData | null
+): ObservatoryState {
+
+    const mountConnected =
+        mountStatus?.connected
+        ?? false;
+
+    const domeConnected =
+        domeStatus?.connected
+        ?? false;
+
+    const weatherConnected =
+        weatherStatus?.connected
+        ?? false;
+
+    const cameraConnected =
+        cameraStatus?.connected
+        ?? false;
+
+
+    const anyConnected =
+        mountConnected
+        ||
+        domeConnected
+        ||
+        weatherConnected
+        ||
+        cameraConnected;
+
+
+    if (!anyConnected) {
+
+        return "offline";
+
+    }
+
+
+    if (
+        weatherConnected
+        &&
+        weatherStatus?.safe === false
+    ) {
+
+        return "unsafe";
+
+    }
+
+
+    if (
+        mountConnected
+        &&
+        domeConnected
+        &&
+        weatherConnected
+        &&
+        cameraConnected
+    ) {
+
+        return "ready";
+
+    }
+
+
+    return "partial";
+}
 
 
 export function ObservatoryStatusProvider({
     children,
-}: {
-    children: ReactNode;
-}) {
+}: Props) {
 
-    const [mountStatus, setMountStatus] =
-        useState<MountStatusData | null>(null);
+    const [
+        mountStatus,
+        setMountStatus,
+    ] =
+        useState<
+            MountStatusData | null
+        >(null);
 
-    const [domeStatus, setDomeStatus] =
-        useState<DomeStatusData | null>(null);
 
-    const [weatherStatus, setWeatherStatus] =
-        useState<WeatherStatusData | null>(null);
+    const [
+        mountPosition,
+        setMountPosition,
+    ] =
+        useState<
+            MountPosition | null
+        >(null);
+
+
+    const [
+        mountPositionRd,
+        setMountPositionRd,
+    ] =
+        useState<
+            MountPosition_rd | null
+        >(null);
+
+
+    const [
+        domeStatus,
+        setDomeStatus,
+    ] =
+        useState<
+            DomeStatusData | null
+        >(null);
+
+
+    const [
+        weatherStatus,
+        setWeatherStatus,
+    ] =
+        useState<
+            WeatherStatusData | null
+        >(null);
+
+
+    const [
+        cameraStatus,
+        setCameraStatus,
+    ] =
+        useState<
+            CameraStatusData | null
+        >(null);
+
+
+    const [
+        refreshing,
+        setRefreshing,
+    ] =
+        useState(false);
+
+
+    const [
+        lastUpdated,
+        setLastUpdated,
+    ] =
+        useState<Date | null>(
+            null
+        );
+
+
+    const refreshInProgress =
+        useRef(false);
 
 
     const refresh =
-        useCallback(async () => {
+        useCallback(
+            async () => {
 
-            const results =
-                await Promise.allSettled([
-                    getMountStatus(),
-                    getDomeStatus(),
-                    getWeatherStatus(),
-                ]);
+                if (
+                    refreshInProgress.current
+                ) {
 
+                    return;
 
-            const [
-                mountResult,
-                domeResult,
-                weatherResult,
-            ] = results;
+                }
 
 
-            setMountStatus(
-                mountResult.status === "fulfilled"
-                    ? mountResult.value
-                    : null
-            );
+                refreshInProgress.current =
+                    true;
+
+                setRefreshing(true);
 
 
-            setDomeStatus(
-                domeResult.status === "fulfilled"
-                    ? domeResult.value
-                    : null
-            );
+                try {
+
+                    const [
+                        mountResult,
+                        domeResult,
+                        weatherResult,
+                        cameraResult,
+                    ] =
+                        await Promise.allSettled([
+                            getMountStatus(),
+                            getDomeStatus(),
+                            getWeatherStatus(),
+                            getCameraStatus(),
+                        ]);
 
 
-            setWeatherStatus(
-                weatherResult.status === "fulfilled"
-                    ? weatherResult.value
-                    : null
-            );
+                    let currentMountStatus:
+                        MountStatusData | null =
+                            null;
 
-        }, []);
+
+                    if (
+                        mountResult.status
+                        ===
+                        "fulfilled"
+                    ) {
+
+                        currentMountStatus =
+                            mountResult.value;
+
+                        setMountStatus(
+                            mountResult.value
+                        );
+
+                    }
+
+
+                    if (
+                        domeResult.status
+                        ===
+                        "fulfilled"
+                    ) {
+
+                        setDomeStatus(
+                            domeResult.value
+                        );
+
+                    }
+
+
+                    if (
+                        weatherResult.status
+                        ===
+                        "fulfilled"
+                    ) {
+
+                        setWeatherStatus(
+                            weatherResult.value
+                        );
+
+                    }
+
+
+                    if (
+                        cameraResult.status
+                        ===
+                        "fulfilled"
+                    ) {
+
+                        setCameraStatus(
+                            cameraResult.value
+                        );
+
+                    }
+
+
+                    if (
+                        currentMountStatus
+                        ?.
+                        connected
+                    ) {
+
+                        const [
+                            altAzResult,
+                            raDecResult,
+                        ] =
+                            await Promise.allSettled([
+                                getMountPosition(),
+                                getMountPosition_rd(),
+                            ]);
+
+
+                        if (
+                            altAzResult.status
+                            ===
+                            "fulfilled"
+                        ) {
+
+                            setMountPosition(
+                                altAzResult.value
+                            );
+
+                        }
+
+
+                        if (
+                            raDecResult.status
+                            ===
+                            "fulfilled"
+                        ) {
+
+                            setMountPositionRd(
+                                raDecResult.value
+                            );
+
+                        }
+
+                    } else if (
+                        currentMountStatus
+                        &&
+                        !currentMountStatus.connected
+                    ) {
+
+                        setMountPosition(
+                            null
+                        );
+
+                        setMountPositionRd(
+                            null
+                        );
+
+                    }
+
+
+                    setLastUpdated(
+                        new Date()
+                    );
+
+                } finally {
+
+                    refreshInProgress.current =
+                        false;
+
+                    setRefreshing(false);
+
+                }
+
+            },
+            []
+        );
 
 
     useEffect(() => {
 
-        refresh();
+        let cancelled =
+            false;
 
-        const interval = setInterval(
-            refresh,
-            3000
-        );
+        let timeout:
+            ReturnType<
+                typeof setTimeout
+            >
+            |
+            undefined;
+
+
+        async function poll() {
+
+            await refresh();
+
+
+            if (cancelled) {
+
+                return;
+
+            }
+
+
+            timeout =
+                setTimeout(
+                    poll,
+                    POLL_INTERVAL_MS
+                );
+
+        }
+
+
+        void poll();
+
 
         return () => {
-            clearInterval(interval);
+
+            cancelled =
+                true;
+
+
+            if (
+                timeout
+                !==
+                undefined
+            ) {
+
+                clearTimeout(
+                    timeout
+                );
+
+            }
+
         };
 
     }, [refresh]);
@@ -141,88 +444,29 @@ export function ObservatoryStatusProvider({
         calculateObservatoryState(
             mountStatus,
             domeStatus,
-            weatherStatus
+            weatherStatus,
+            cameraStatus
         );
 
 
     return (
+
         <ObservatoryStatusContext.Provider
             value={{
                 mountStatus,
+                mountPosition,
+                mountPositionRd,
                 domeStatus,
                 weatherStatus,
+                cameraStatus,
                 observatoryState,
+                refreshing,
+                lastUpdated,
                 refresh,
             }}
         >
             {children}
         </ObservatoryStatusContext.Provider>
+
     );
-}
-
-
-export function useObservatoryStatus() {
-
-    const context =
-        useContext(
-            ObservatoryStatusContext
-        );
-
-
-    if (!context) {
-        throw new Error(
-            "useObservatoryStatus must be used inside ObservatoryStatusProvider"
-        );
-    }
-
-
-    return context;
-}
-
-
-function calculateObservatoryState(
-    mount: MountStatusData | null,
-    dome: DomeStatusData | null,
-    weather: WeatherStatusData | null
-): ObservatoryState {
-
-    const mountConnected =
-        mount?.connected ?? false;
-
-    const domeConnected =
-        dome?.connected ?? false;
-
-    const weatherConnected =
-        weather?.connected ?? false;
-
-
-    const anyConnected =
-        mountConnected ||
-        domeConnected ||
-        weatherConnected;
-
-
-    if (!anyConnected) {
-        return "offline";
-    }
-
-
-    if (
-        weather?.safe === false ||
-        dome?.fault === true
-    ) {
-        return "unsafe";
-    }
-
-
-    if (
-        !mountConnected ||
-        !domeConnected ||
-        !weatherConnected
-    ) {
-        return "degraded";
-    }
-
-
-    return "nominal";
 }

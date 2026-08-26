@@ -1,15 +1,6 @@
 import {
-    useEffect,
-    useState,
-} from "react";
-
-import {
-    getCameraStatus,
-} from "../../api/camera";
-
-import type {
-    CameraStatusData,
-} from "../../api/camera";
+    useObservatoryStatus,
+} from "../../context/ObservatoryStatusContext";
 
 import DashboardStatusCard
     from "../Common/DashboardStatusCard";
@@ -20,50 +11,10 @@ import DashboardStatusRow
 
 export default function CameraStatus() {
 
-    const [status, setStatus] =
-        useState<CameraStatusData | null>(
-            null
-        );
-
-
-    useEffect(() => {
-
-        async function update() {
-
-            try {
-
-                const result =
-                    await getCameraStatus();
-
-                setStatus(result);
-
-            } catch (error) {
-
-                console.error(
-                    "Unable to retrieve camera status:",
-                    error
-                );
-
-                setStatus(null);
-
-            }
-
-        }
-
-
-        update();
-
-        const interval = setInterval(
-            update,
-            3000
-        );
-
-
-        return () => {
-            clearInterval(interval);
-        };
-
-    }, []);
+    const {
+        cameraStatus: status,
+    } =
+        useObservatoryStatus();
 
 
     return (

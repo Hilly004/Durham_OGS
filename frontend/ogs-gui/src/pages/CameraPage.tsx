@@ -1,6 +1,4 @@
 import {
-    useCallback,
-    useEffect,
     useState,
 } from "react";
 
@@ -16,61 +14,24 @@ import HomeCameraWidget
 import {
     connectCamera,
     disconnectCamera,
-    getCameraStatus,
 } from "../api/camera";
 
-import type {
-    CameraStatusData,
-} from "../api/camera";
+import {
+    useObservatoryStatus,
+} from "../context/ObservatoryStatusContext";
 
 
 export default function CameraPage() {
 
-    const [status, setStatus] =
-        useState<CameraStatusData | null>(null);
+    const {
+        cameraStatus: status,
+        refresh,
+    } =
+        useObservatoryStatus();
+
 
     const [loading, setLoading] =
         useState(false);
-
-
-    const updateStatus =
-        useCallback(async () => {
-
-            try {
-
-                const result =
-                    await getCameraStatus();
-
-                setStatus(result);
-
-            } catch (error) {
-
-                console.error(
-                    "Unable to retrieve camera status:",
-                    error
-                );
-
-                setStatus(null);
-
-            }
-
-        }, []);
-
-
-    useEffect(() => {
-
-        updateStatus();
-
-        const interval = setInterval(
-            updateStatus,
-            3000
-        );
-
-        return () => {
-            clearInterval(interval);
-        };
-
-    }, [updateStatus]);
 
 
     async function handleConnection() {
@@ -94,7 +55,7 @@ export default function CameraPage() {
 
         } finally {
 
-            await updateStatus();
+            await refresh();
 
             setLoading(false);
 

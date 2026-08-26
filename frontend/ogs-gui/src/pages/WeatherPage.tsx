@@ -1,66 +1,32 @@
 import {
-    useCallback,
-    useEffect,
     useState,
 } from "react";
 
 import {
     connectWeather,
     disconnectWeather,
-    getWeatherStatus,
     setWeatherOverride,
 } from "../api/weather";
 
 import type {
     WeatherOverrideMode,
-    WeatherStatusData,
 } from "../api/weather";
+
+import {
+    useObservatoryStatus,
+} from "../context/ObservatoryStatusContext";
 
 
 export default function WeatherPage() {
 
-    const [status, setStatus] =
-        useState<WeatherStatusData | null>(null);
+    const {
+        weatherStatus: status,
+        refresh,
+    } =
+        useObservatoryStatus();
 
     const [loading, setLoading] =
         useState(false);
-
-
-    const updateStatus = useCallback(async () => {
-
-        try {
-
-            const result =
-                await getWeatherStatus();
-
-            setStatus(result);
-
-        } catch (error) {
-
-            console.error(
-                "Unable to retrieve weather status:",
-                error
-            );
-
-        }
-
-    }, []);
-
-
-    useEffect(() => {
-
-        updateStatus();
-
-        const interval = setInterval(
-            updateStatus,
-            3000
-        );
-
-        return () => {
-            clearInterval(interval);
-        };
-
-    }, [updateStatus]);
 
 
     async function handleConnection() {
@@ -73,9 +39,7 @@ export default function WeatherPage() {
                 await connectWeather();
             }
 
-            // Do not manually change status.connected.
-            // Ask the backend what the real state is.
-            await updateStatus();
+            await refresh();
 
         } catch (error) {
             console.error(
@@ -83,13 +47,13 @@ export default function WeatherPage() {
                 error
             );
 
-            // Refresh even after failure so the UI reflects reality.
-            await updateStatus();
+            await refresh();
 
         } finally {
             setLoading(false);
         }
     }
+
 
     async function handleOverride(
         mode: WeatherOverrideMode
@@ -101,7 +65,7 @@ export default function WeatherPage() {
 
             await setWeatherOverride(mode);
 
-            await updateStatus();
+            await refresh();
 
         } catch (error) {
 
@@ -109,6 +73,8 @@ export default function WeatherPage() {
                 "Unable to change weather override:",
                 error
             );
+
+            await refresh();
 
         } finally {
 
@@ -231,6 +197,7 @@ export default function WeatherPage() {
 
             </div>
 
+
             {/* Main Content */}
             <div
                 className="
@@ -324,8 +291,6 @@ export default function WeatherPage() {
                         )}
 
 
-                        {/* Override warning is intentionally amber,
-                            because this is an active test condition. */}
                         {status?.override !== null &&
                             status?.override !== undefined && (
 

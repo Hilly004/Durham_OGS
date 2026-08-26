@@ -1,5 +1,4 @@
 import {
-    useCallback,
     useEffect,
     useState,
 } from "react";
@@ -12,80 +11,33 @@ import StatusCard
     from "../Common/DashboardStatusCard";
 
 import {
-    getCameraStatus,
-} from "../../api/camera";
-
-import type {
-    CameraStatusData,
-} from "../../api/camera";
+    useObservatoryStatus,
+} from "../../context/ObservatoryStatusContext";
 
 
 export default function HomeCameraWidget() {
 
-    const [
-        status,
-        setStatus,
-    ] = useState<CameraStatusData>({
-        connected: false,
-        streaming: false,
-        camera: null,
-        exposure: null,
-        gain: null,
-        frame_count: 0,
-    });
+    const {
+        cameraStatus,
+    } =
+        useObservatoryStatus();
+
+
+    const status =
+        cameraStatus ?? {
+            connected: false,
+            streaming: false,
+            camera: null,
+            exposure: null,
+            gain: null,
+            frame_count: 0,
+        };
 
 
     const [
         frameVersion,
         setFrameVersion,
     ] = useState(0);
-
-
-    /*
-     * Get camera connection / streaming status
-     */
-    const refreshStatus =
-        useCallback(async () => {
-
-            try {
-
-                const currentStatus =
-                    await getCameraStatus();
-
-                setStatus(
-                    currentStatus
-                );
-
-            } catch (error) {
-
-                console.error(
-                    "Unable to get camera status:",
-                    error
-                );
-
-            }
-
-        }, []);
-
-
-    /*
-     * Poll camera status
-     */
-    useEffect(() => {
-
-        refreshStatus();
-
-        const timer =
-            window.setInterval(
-                refreshStatus,
-                2000
-            );
-
-        return () => {
-            window.clearInterval(timer);
-        };
-
-    }, [refreshStatus]);
 
 
     /*
@@ -127,25 +79,6 @@ export default function HomeCameraWidget() {
         status.connected,
         status.streaming,
     ]);
-
-
-    /*
-     * Get one image when the camera
-     * first becomes connected.
-     */
-    useEffect(() => {
-
-        if (status.connected) {
-
-            setFrameVersion(
-                current =>
-                    current + 1
-            );
-
-        }
-
-    }, [status.connected]);
-
 
     const frameUrl =
         `/api/camera/frame?v=${frameVersion}`;

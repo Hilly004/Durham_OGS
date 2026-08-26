@@ -1,15 +1,6 @@
 import {
-    useEffect,
-    useState,
-} from "react";
-
-import {
-    getWeatherStatus,
-} from "../../api/weather";
-
-import type {
-    WeatherStatusData,
-} from "../../api/weather";
+    useObservatoryStatus,
+} from "../../context/ObservatoryStatusContext";
 
 import DashboardStatusCard
     from "../Common/DashboardStatusCard";
@@ -20,48 +11,10 @@ import DashboardStatusRow
 
 export default function WeatherStatusWidget() {
 
-    const [status, setStatus] =
-        useState<WeatherStatusData | null>(null);
-
-
-    useEffect(() => {
-
-        async function update() {
-
-            try {
-
-                const weatherStatus =
-                    await getWeatherStatus();
-
-                setStatus(weatherStatus);
-
-            } catch (error) {
-
-                console.error(
-                    "Unable to retrieve weather status:",
-                    error
-                );
-
-                setStatus(null);
-
-            }
-
-        }
-
-
-        update();
-
-        const interval = setInterval(
-            update,
-            3000
-        );
-
-
-        return () => {
-            clearInterval(interval);
-        };
-
-    }, []);
+    const {
+        weatherStatus: status,
+    } =
+        useObservatoryStatus();
 
 
     const conditions =

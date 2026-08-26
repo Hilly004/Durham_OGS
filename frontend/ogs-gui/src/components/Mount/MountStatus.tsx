@@ -1,25 +1,16 @@
 import {
-    useEffect,
     useState,
 } from "react";
-
-import {
-    getMountStatus,
-    getMountPosition,
-    getMountPosition_rd,
-} from "../../api/mount";
-
-import type {
-    MountStatusData,
-    MountPosition,
-    MountPosition_rd,
-} from "../../api/mount";
 
 import DashboardStatusCard
     from "../Common/DashboardStatusCard";
 
 import DashboardStatusRow
     from "../Common/DashboardStatusRow";
+
+import {
+    useObservatoryStatus,
+} from "../../context/ObservatoryStatusContext";
 
 
 type CoordinateMode =
@@ -29,81 +20,16 @@ type CoordinateMode =
 
 export default function MountStatusWidget() {
 
-    const [status, setStatus] =
-        useState<MountStatusData | null>(null);
+    const {
+        mountStatus: status,
+        mountPosition: position,
+        mountPositionRd: positionRd,
+    } =
+        useObservatoryStatus();
 
-    const [position, setPosition] =
-        useState<MountPosition | null>(null);
-
-    const [positionRd, setPositionRd] =
-        useState<MountPosition_rd | null>(null);
 
     const [mode, setMode] =
         useState<CoordinateMode>("altaz");
-
-
-    useEffect(() => {
-
-        async function update() {
-
-            try {
-
-                const mountStatus =
-                    await getMountStatus();
-
-                setStatus(mountStatus);
-
-
-                if (!mountStatus.connected) {
-
-                    setPosition(null);
-                    setPositionRd(null);
-
-                    return;
-                }
-
-
-                const [
-                    altAz,
-                    raDec,
-                ] = await Promise.all([
-                    getMountPosition(),
-                    getMountPosition_rd(),
-                ]);
-
-
-                setPosition(altAz);
-                setPositionRd(raDec);
-
-            } catch (error) {
-
-                console.error(
-                    "Unable to retrieve mount status:",
-                    error
-                );
-
-                setStatus(null);
-                setPosition(null);
-                setPositionRd(null);
-
-            }
-
-        }
-
-
-        update();
-
-        const interval = setInterval(
-            update,
-            3000
-        );
-
-
-        return () => {
-            clearInterval(interval);
-        };
-
-    }, []);
 
 
     return (

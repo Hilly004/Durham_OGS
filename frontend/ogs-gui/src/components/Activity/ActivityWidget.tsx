@@ -81,15 +81,34 @@ export default function ActivityLog({
 
     useEffect(() => {
 
-        updateActivity();
+        const initialTimer =
+            window.setTimeout(
+                () => {
+                    void updateActivity();
+                },
+                0
+            );
 
-        const interval = setInterval(
-            updateActivity,
-            2000
-        );
+
+        const interval =
+            window.setInterval(
+                () => {
+                    void updateActivity();
+                },
+                3000
+            );
+
 
         return () => {
-            clearInterval(interval);
+
+            window.clearTimeout(
+                initialTimer
+            );
+
+            window.clearInterval(
+                interval
+            );
+
         };
 
     }, [updateActivity]);

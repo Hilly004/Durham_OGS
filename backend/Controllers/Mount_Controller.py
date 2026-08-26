@@ -314,6 +314,19 @@ class MountController:
             self.mount.is_connected()
         )
 
+    def get_health(self):
+
+        connected = (
+            self.mount.is_connected()
+            if self.mount is not None
+            else False
+        )
+
+        return {
+            "connected": connected,
+            "ready": connected,
+            "fault": False,
+        }
 
     # ============================================================
     # Manual movement

@@ -1,15 +1,6 @@
 import {
-    useEffect,
-    useState,
-} from "react";
-
-import {
-    getDomeStatus,
-} from "../../api/dome";
-
-import type {
-    DomeStatusData,
-} from "../../api/dome";
+    useObservatoryStatus,
+} from "../../context/ObservatoryStatusContext";
 
 import DashboardStatusCard
     from "../Common/DashboardStatusCard";
@@ -20,48 +11,10 @@ import DashboardStatusRow
 
 export default function DomeStatusWidget() {
 
-    const [status, setStatus] =
-        useState<DomeStatusData | null>(null);
-
-
-    useEffect(() => {
-
-        async function update() {
-
-            try {
-
-                const domeStatus =
-                    await getDomeStatus();
-
-                setStatus(domeStatus);
-
-            } catch (error) {
-
-                console.error(
-                    "Unable to retrieve dome status:",
-                    error
-                );
-
-                setStatus(null);
-
-            }
-
-        }
-
-
-        update();
-
-        const interval = setInterval(
-            update,
-            3000
-        );
-
-
-        return () => {
-            clearInterval(interval);
-        };
-
-    }, []);
+    const {
+        domeStatus: status,
+    } =
+        useObservatoryStatus();
 
 
     const domeState =

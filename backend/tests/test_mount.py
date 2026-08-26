@@ -1,31 +1,67 @@
-import sys
-from pathlib import Path
+import socket
+from unittest.mock import MagicMock
 
-BACKEND_DIR = Path(__file__).resolve().parent.parent
-
-if str(BACKEND_DIR) not in sys.path:
-    sys.path.insert(0, str(BACKEND_DIR))
+import pytest
 
 from Hardware.Connections.Mount_Connection import MountConnection
-from Hardware.Mount.Mount_Commands import TenMicronMount
-from Controllers.Mount_Controller import MountController
-from Utilities.Observatory_Logger import ObservatoryLogger
 
-import numpy as np
-host = '192.168.1.119'
-port = 3490
 
-connection = MountConnection(
-    host,
-    port
-)
-mount = TenMicronMount(connection)
-logger = ObservatoryLogger()
+def test_send_receive_sends_command_and_returns_response():
 
-control = MountController(mount,logger)
+    connection = MountConnection(
+        "127.0.0.1",
+        3490
+    )
 
-connection.connect()
+    fake_socket = MagicMock()
 
-print(connection.send_receive(':NUDGE+0001,-0010#'))
+    fake_socket.recv.return_value = (
+        b"10micron GM2000HPS#"
+    )
 
-connection.disconnect()
+    connection.socket = fake_socket
+    connection.connected = True
+
+
+    response = connection.send_receive(
+        ":GVP#",
+        "#"
+    )
+
+
+    fake_socket.sendall.assert_called_once_with(
+        b":GVP#"
+    )
+
+    assert response == (
+        "10micron GM2000HPS#"
+    )
+
+
+def test_send_receive_disconnects_on_timeout():
+
+    connection = MountConnection(
+        "127.0.0.1",
+        3490
+    )
+
+    fake_socket = MagicMock()
+
+    fake_socket.recv.side_effect = (
+        socket.timeout()
+    )
+
+    connection.socket = fake_socket
+    connection.connected = True
+
+
+    with pytest.raises(TimeoutError):
+
+        connection.send_receive(
+            ":GVP#",
+            "#"
+        )
+
+
+    assert connection.connected is False
+    assert connection.socket is None

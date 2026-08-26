@@ -1,6 +1,4 @@
 import {
-    useCallback,
-    useEffect,
     useState,
 } from "react";
 
@@ -10,67 +8,30 @@ import MountControls
 import MountStatus
     from "../components/Mount/MountStatus";
 
-import HomeCameraWidget from "../components/Camera/HomeCameraWidget";
+import HomeCameraWidget
+    from "../components/Camera/HomeCameraWidget";
 
 import {
     connectMount,
     disconnectMount,
-    getMountStatus,
 } from "../api/mount";
 
-import type {
-    MountStatusData,
-} from "../api/mount";
-
+import {
+    useObservatoryStatus,
+} from "../context/ObservatoryStatusContext";
 
 
 export default function MountPage() {
 
-    const [status, setStatus] =
-        useState<MountStatusData | null>(null);
+    const {
+        mountStatus: status,
+        refresh,
+    } =
+        useObservatoryStatus();
+
 
     const [loading, setLoading] =
         useState(false);
-
-
-    const updateStatus =
-        useCallback(async () => {
-
-            try {
-
-                const result =
-                    await getMountStatus();
-
-                setStatus(result);
-
-            } catch (error) {
-
-                console.error(
-                    "Unable to retrieve mount status:",
-                    error
-                );
-
-                setStatus(null);
-
-            }
-
-        }, []);
-
-
-    useEffect(() => {
-
-        updateStatus();
-
-        const interval = setInterval(
-            updateStatus,
-            3000
-        );
-
-        return () => {
-            clearInterval(interval);
-        };
-
-    }, [updateStatus]);
 
 
     async function handleConnection() {
@@ -95,9 +56,11 @@ export default function MountPage() {
         } finally {
 
             /*
-             * Always ask the backend for the real state.
+             * Ask the central status provider
+             * to immediately refresh after a
+             * connection change.
              */
-            await updateStatus();
+            await refresh();
 
             setLoading(false);
 
@@ -247,8 +210,6 @@ export default function MountPage() {
                     <MountStatus />
                 </div>
 
-                
-
 
                 {/* Controls */}
                 <div
@@ -259,20 +220,24 @@ export default function MountPage() {
                         overflow-hidden
                     "
                 >
-                    
+
                     <MountControls
                         connected={
-                            status?.connected ?? false
+                            status?.connected
+                            ?? false
                         }
                     />
+
                 </div>
+
 
                 {/* Camera */}
                 <div
-                className="
+                    className="
                         col-span-5
                         min-h-0
-                        overflow-hidden"
+                        overflow-hidden
+                    "
                 >
                     <HomeCameraWidget />
                 </div>

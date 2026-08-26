@@ -21,7 +21,8 @@ class ObservatoryController:
 
         self.shutdown_in_progress = False
         self.unsafe_shutdown_triggered = False
-        self.safety_monitor_armed = False
+
+        self.automatic_shutdown_enabled = True
 
     def start(self):
         if self.running:
@@ -36,12 +37,6 @@ class ObservatoryController:
 
         self.monitor_thread.start()
 
-    def arm_safety_monitor(self):
-        self.safety_monitor_armed = True
-
-    def disarm_safety_monitor(self):
-        self.safety_monitor_armed = False
-
     def _monitor(self):
 
         last_monitor_error = None
@@ -52,7 +47,7 @@ class ObservatoryController:
 
                 self.weather.update()
 
-                if not self.safety_monitor_armed:
+                if not self.automatic_shutdown_enabled:
                     time.sleep(2)
                     continue
 

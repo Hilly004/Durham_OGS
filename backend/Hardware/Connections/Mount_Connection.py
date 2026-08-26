@@ -10,7 +10,7 @@ class MountConnection:
         self.socket = None
         self.connected = False
 
-        self.command_lock = threading.Lock()
+        self.command_lock = threading.RLock()
 
     def configure(
         self,
@@ -38,18 +38,22 @@ class MountConnection:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.settimeout(5)
             self.socket.connect((self.host, self.port))
-        
-            self.socket.sendall(b':U2#')
 
             self.connected = True
-            print('Connected')
-        except socket.error as e:
-            print(f'Socket error: {e}')
-            if self.socket:
-                self.socket.close()
-                self.socket = None
-            self.connected = False
-            print('Not connected')
+
+            self.socket.sendall(b':U2#')
+
+            response = self.send_receive(":GVP#",terminator="#")
+
+            if (not response or response == '#'):
+                raise ConnectionError(
+                    'Mount did not return a valid product name'
+                )
+            
+            print(f'Connected to mount: {response.rstrip('#')}')
+
+        except Exception:
+            self.disconnect()
             raise
 
     def disconnect(self):
@@ -75,6 +79,7 @@ class MountConnection:
             chunk = self.socket.recv(1024).decode()
 
             if not chunk:
+                self.disconnect()
                 raise ConnectionError('Mount connection closed')
 
             response += chunk
@@ -88,7 +93,7 @@ class MountConnection:
     def send_receive(
         self,
         message,
-        terminator='#'
+        terminator
     ):
 
         if not self.connected:
@@ -108,7 +113,7 @@ class MountConnection:
 
 
         except socket.timeout:
-
+            self.disconnect()
             # A timeout does not necessarily mean
             # the TCP connection has been lost.
             raise TimeoutError(
@@ -125,118 +130,4 @@ class MountConnection:
 
             self.disconnect()
 
-            raise
-
-    def send_command_char(
-        self,
-        command: str
-    ):
-
-        if not self.is_connected():
-
-            raise ConnectionError(
-                "Mount not connected"
-            )
-
-
-        with self.lock:
-
-            try:
-
-                self.socket.sendall(
-                    command.encode(
-                        "ascii"
-                    )
-                )
-
-
-                response = (
-                    self.socket.recv(1)
-                )
-
-
-                if not response:
-
-                    raise TimeoutError(
-                        (
-                            "Mount response timeout "
-                            f"for command: {command}"
-                        )
-                    )
-
-
-                return (
-                    response
-                    .decode(
-                        "ascii",
-                        errors="ignore"
-                    )
-                )
-
-
-            except TimeoutError:
-
-                raise
-
-
-            except Exception as e:
-
-                raise RuntimeError(
-                    (
-                        "Mount command failed "
-                        f"{command}: {e}"
-                    )
-                ) from e
-    
-
-    def send_receive_byte(
-        self,
-        message: str
-    ):
-
-        if not self.connected or self.socket is None:
-            raise RuntimeError(
-                "Mount not connected"
-            )
-
-        try:
-
-            with self.command_lock:
-
-                self.socket.sendall(
-                    message.encode(
-                        "latin-1"
-                    )
-                )
-
-                response = (
-                    self.socket
-                    .recv(1)
-                    .decode(
-                        "latin-1"
-                    )
-                )
-
-                if not response:
-                    raise ConnectionError(
-                        "Mount connection closed"
-                    )
-
-                return response
-
-        except socket.timeout:
-
-            raise TimeoutError(
-                "Mount response timeout for "
-                f"byte command: {repr(message)}"
-            )
-
-        except (
-            ConnectionError,
-            BrokenPipeError,
-            ConnectionResetError,
-            OSError,
-        ):
-
-            self.disconnect()
             raise

@@ -8,7 +8,7 @@ class WeatherController:
         # None  = use real weather
         # True  = force safe
         # False = force unsafe
-        self._safety_override = True
+        self._safety_override = None
 
 
     def set_safety_override(

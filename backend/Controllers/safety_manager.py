@@ -13,6 +13,7 @@ class SafetyManager:
         self.mount = mount
         self.dome = dome
 
+        self.weather_timeout_seconds = 10
 
     def get_status(self):
 
@@ -52,7 +53,7 @@ class SafetyManager:
             if (
                 time.monotonic()
                 - self.weather.last_update
-                > 10
+                > self.weather_timeout_seconds
             ):
 
                 return {

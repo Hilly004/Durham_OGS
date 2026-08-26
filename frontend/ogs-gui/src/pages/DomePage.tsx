@@ -1,6 +1,4 @@
 import {
-    useCallback,
-    useEffect,
     useState,
 } from "react";
 
@@ -10,58 +8,24 @@ import DomeStatus from "../components/Dome/DomeStatus";
 import {
     connectDome,
     disconnectDome,
-    getDomeStatus,
 } from "../api/dome";
 
-import type {
-    DomeStatusData,
-} from "../api/dome";
+import {
+    useObservatoryStatus,
+} from "../context/ObservatoryStatusContext";
 
 
 export default function DomePage() {
 
-    const [status, setStatus] =
-        useState<DomeStatusData | null>(null);
+    const {
+        domeStatus: status,
+        refresh,
+    } =
+        useObservatoryStatus();
+
 
     const [loading, setLoading] =
         useState(false);
-
-
-    const updateStatus = useCallback(async () => {
-
-        try {
-
-            const result =
-                await getDomeStatus();
-
-            setStatus(result);
-
-        } catch (error) {
-
-            console.error(
-                "Unable to retrieve dome status:",
-                error
-            );
-
-        }
-
-    }, []);
-
-
-    useEffect(() => {
-
-        updateStatus();
-
-        const interval = setInterval(
-            updateStatus,
-            3000
-        );
-
-        return () => {
-            clearInterval(interval);
-        };
-
-    }, [updateStatus]);
 
 
     async function handleConnection() {
@@ -76,8 +40,6 @@ export default function DomePage() {
                 await connectDome();
             }
 
-            await updateStatus();
-
         } catch (error) {
 
             console.error(
@@ -85,9 +47,9 @@ export default function DomePage() {
                 error
             );
 
-            await updateStatus();
-
         } finally {
+
+            await refresh();
 
             setLoading(false);
 
