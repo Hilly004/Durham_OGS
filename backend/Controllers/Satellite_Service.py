@@ -1,3 +1,5 @@
+import time
+
 from models.satellite import Satellite
 from Utilities.TLE_Parser import TLEParser
 
@@ -655,6 +657,155 @@ class SatelliteService:
             )
 
             raise
+
+
+    def satellite_nudge(
+        self,
+        direction: str,
+        duration_ms: int
+    ):
+
+        """
+        Apply a short manual movement correction while the
+        TenMicron mount is following a satellite trajectory.
+
+        Satellite trajectory mode is Gstat state 10. The
+        correction uses the same directional movement commands
+        that were verified to move the mount during trajectory
+        tracking, then stops that axis after a short duration.
+        """
+
+        direction = (
+            direction
+            .strip()
+            .lower()
+        )
+
+
+        if direction not in {
+            "north",
+            "south",
+            "east",
+            "west",
+        }:
+
+            raise ValueError(
+                f"Invalid satellite correction direction: {direction}"
+            )
+
+
+        if (
+            duration_ms < 10
+            or
+            duration_ms > 2000
+        ):
+
+            raise ValueError(
+                (
+                    "Satellite correction duration "
+                    "must be between 10 and 2000 ms"
+                )
+            )
+
+
+        status_response = (
+            self.mount
+            .get_mount_status()
+        )
+
+
+        status_text = (
+            str(status_response)
+            .strip()
+            .rstrip("#")
+        )
+
+
+        try:
+
+            mount_status = int(
+                status_text
+            )
+
+        except ValueError:
+
+            raise RuntimeError(
+                (
+                    "Unexpected mount status response: "
+                    f"{status_response!r}"
+                )
+            )
+
+
+        if mount_status != 10:
+
+            raise RuntimeError(
+                (
+                    "Satellite correction is only available "
+                    "while the mount is following a satellite "
+                    "trajectory (mount state 10)"
+                )
+            )
+
+
+        if direction == "north":
+
+            start = self.mount.move_north
+            stop = self.mount.stop_north
+
+        elif direction == "south":
+
+            start = self.mount.move_south
+            stop = self.mount.stop_south
+
+        elif direction == "east":
+
+            start = self.mount.move_east
+            stop = self.mount.stop_east
+
+        else:
+
+            start = self.mount.move_west
+            stop = self.mount.stop_west
+
+
+        self._info(
+            (
+                "Satellite correction requested: "
+                f"{direction}, {duration_ms} ms"
+            )
+        )
+
+
+        try:
+
+            start()
+
+            time.sleep(
+                duration_ms / 1000.0
+            )
+
+        finally:
+
+            stop()
+
+
+        self._success(
+            (
+                "Satellite correction complete: "
+                f"{direction}, {duration_ms} ms"
+            )
+        )
+
+
+        return {
+            "direction": direction,
+            "duration_ms": duration_ms,
+            "message": (
+                f"Trajectory adjusted {direction} "
+                f"for {duration_ms} ms"
+            ),
+        }
 
 
     def stop_tracking(self):

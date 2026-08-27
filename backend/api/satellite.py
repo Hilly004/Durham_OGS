@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -29,6 +31,20 @@ def set_logger(logger):
     global activity_logger
     activity_logger = logger
     
+class SatelliteCorrectionRequest(BaseModel):
+    direction: Literal[
+        "north",
+        "south",
+        "east",
+        "west",
+    ]
+
+    duration_ms: int = Field(
+        ge=10,
+        le=2000
+    )
+
+
 class PassPredictionRequest(BaseModel):
     jd: float
     minutes: int = Field(
@@ -462,6 +478,54 @@ def get_tracking_status(
         "success": True,
         "data": result
     }
+
+@router.post("/tracking/correction")
+def correct_satellite_trajectory(
+    request: SatelliteCorrectionRequest,
+    db: Session = Depends(get_db),
+):
+
+    repository = SatelliteRepository(db)
+
+    service = SatelliteService(
+        repository,
+        get_mount(),
+        activity_logger
+    )
+
+    try:
+
+        result = service.satellite_nudge(
+            request.direction,
+            request.duration_ms
+        )
+
+        return {
+            "success": True,
+            "data": result
+        }
+
+    except ValueError as e:
+
+        raise HTTPException(
+            status_code=400,
+            detail=str(e)
+        )
+
+    except RuntimeError as e:
+
+        raise HTTPException(
+            status_code=409,
+            detail=str(e)
+        )
+
+    except Exception as e:
+
+        raise HTTPException(
+            status_code=502,
+            detail=str(e)
+        )
+
 
 @router.post("/tracking/stop")
 def stop_satellite_tracking(

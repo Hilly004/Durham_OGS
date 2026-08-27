@@ -12,6 +12,9 @@ import SatelliteTrackingStatusWidget
 import SatelliteControls
     from "../components/SatelliteTracking/SatelliteControls";
 
+import TrajectoryAdjustment
+    from "../components/SatelliteTracking/TrajectoryAdjustment";
+
 import TLEUpload
     from "../components/SatelliteTracking/TLEUpload";
 
@@ -96,8 +99,18 @@ export default function SatellitePage() {
                     <SatelliteTrackingStatusWidget />
                 </div>
 
-                <div className="col-span-7 min-h-0 overflow-hidden">
-                    <SatelliteControls />
+                <div
+                    className="
+                        col-span-7
+                        min-h-0
+                        overflow-y-auto
+                        pr-1
+                    "
+                >
+                    <div className="space-y-4">
+                        <SatelliteControls />
+                        <TrajectoryAdjustment />
+                    </div>
                 </div>
 
             </div>

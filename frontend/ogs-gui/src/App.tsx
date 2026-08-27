@@ -6,7 +6,7 @@ import {
 
 import {
     ObservatoryStatusProvider,
-} from "./context/ObservatoryStatusContext";
+} from "./context/ObservatoryStatusProvider";
 
 import Layout from "./components/Layout/Layout";
 

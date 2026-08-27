@@ -14,7 +14,7 @@ import {
 
 import {
     useObservatoryStatus,
-} from "../../context/ObservatoryStatusContext";
+} from "../../context/useObservatoryStatus";
 
 import {
     getObservatoryStateStyle,
@@ -408,18 +408,18 @@ export default function Sidebar() {
 
 function getObservatoryDescription(
     state:
-        | "nominal"
-        | "degraded"
+        | "ready"
+        | "partial"
         | "unsafe"
         | "offline"
 ) {
 
     switch (state) {
 
-        case "nominal":
+        case "ready":
             return "All monitored systems operational";
 
-        case "degraded":
+        case "partial":
             return "One or more systems unavailable";
 
         case "unsafe":
@@ -427,6 +427,5 @@ function getObservatoryDescription(
 
         case "offline":
             return "Observatory systems offline";
-
     }
 }

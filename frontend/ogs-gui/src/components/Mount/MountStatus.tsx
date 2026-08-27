@@ -10,7 +10,7 @@ import DashboardStatusRow
 
 import {
     useObservatoryStatus,
-} from "../../context/ObservatoryStatusContext";
+} from "../../context/useObservatoryStatus";
 
 
 type CoordinateMode =

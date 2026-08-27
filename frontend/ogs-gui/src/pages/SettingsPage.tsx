@@ -172,11 +172,10 @@ export default function SettingsPage() {
 
         try {
 
-            const payload = {
-                ...settings,
-            };
-
-            delete payload.id;
+            const {
+                id: _id,
+                ...payload
+            } = settings;
 
 
             const result =

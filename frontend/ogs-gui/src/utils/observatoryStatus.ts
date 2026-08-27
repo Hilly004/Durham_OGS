@@ -1,6 +1,6 @@
 import type {
     ObservatoryState,
-} from "../context/ObservatoryStatusContext";
+} from "../context/observatoryStatusContext";
 
 
 export function getObservatoryStateStyle(
@@ -9,14 +9,14 @@ export function getObservatoryStateStyle(
 
     switch (state) {
 
-        case "nominal":
+        case "ready":
             return {
                 label: "NOMINAL",
                 dot: "bg-green-500",
                 text: "text-green-400",
             };
 
-        case "degraded":
+        case "partial":
             return {
                 label: "DEGRADED",
                 dot: "bg-amber-500",

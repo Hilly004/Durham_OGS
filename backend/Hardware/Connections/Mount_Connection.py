@@ -113,9 +113,7 @@ class MountConnection:
 
 
         except socket.timeout:
-            self.disconnect()
-            # A timeout does not necessarily mean
-            # the TCP connection has been lost.
+
             raise TimeoutError(
                 f'Mount response timeout for command: {message}'
             )

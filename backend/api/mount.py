@@ -345,24 +345,47 @@ def nudge(
 @router.post("/move/{direction}")
 def move(direction: str):
 
-    controller = get_controller()
+    observatory = get_observatory_controller()
 
-    if direction == "north":
-        controller.move_north()
-
-    elif direction == "south":
-        controller.move_south()
-
-    elif direction == "east":
-        controller.move_east()
-
-    elif direction == "west":
-        controller.move_west()
-
-    else:
+    if direction not in {
+        "north",
+        "south",
+        "east",
+        "west",
+    }:
         raise HTTPException(
             status_code=400,
             detail="Invalid direction"
+        )
+
+    try:
+
+        result = observatory.move_mount(
+            direction
+        )
+
+    except ConnectionError:
+
+        raise HTTPException(
+            status_code=503,
+            detail="Mount not connected"
+        )
+
+    except RuntimeError as e:
+
+        raise HTTPException(
+            status_code=409,
+            detail=str(e)
+        )
+
+    if not result:
+
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Mount manual movement prevented "
+                "by observatory safety system"
+            )
         )
 
     return {

@@ -18,7 +18,7 @@ import {
 
 import {
     useObservatoryStatus,
-} from "../context/ObservatoryStatusContext";
+} from "../context/useObservatoryStatus";
 
 
 export default function MountPage() {

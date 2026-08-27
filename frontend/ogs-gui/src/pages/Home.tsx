@@ -17,7 +17,7 @@ import HomeCameraWidget
 
 import {
     useObservatoryStatus,
-} from "../context/ObservatoryStatusContext";
+} from "../context/useObservatoryStatus";
 
 import {
     getObservatoryStateStyle,

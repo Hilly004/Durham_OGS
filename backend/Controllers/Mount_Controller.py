@@ -388,7 +388,7 @@ class MountController:
             )
 
         # ------------------------------------------------------------
-        # Check Gstat
+        # Check mount state
         # ------------------------------------------------------------
 
         mount_status_raw = (
@@ -401,21 +401,23 @@ class MountController:
             .rstrip("#")
         )
 
+        self.logger.info(
+            f"Pre-nudge mount state: {mount_status}",
+            source="MOUNT",
+        )
+
         allowed_states = {
             0,  # tracking
-            1,  # stopped
-            7,  # not tracking / stationary
+            7,  # tracking off / stationary
         }
 
         if mount_status not in allowed_states:
-
             raise RuntimeError(
                 f"Cannot nudge mount in state {mount_status}"
             )
 
-
         # ------------------------------------------------------------
-        # Make sure any previous slew is finished
+        # Ensure no slew/nudge is currently active
         # ------------------------------------------------------------
 
         slew_response = (
@@ -423,19 +425,19 @@ class MountController:
         )
 
         self.logger.info(
-            f"Pre-nudge slew status: {slew_response}",
+            f"Pre-nudge slew status: {slew_response!r}",
             source="MOUNT",
         )
 
-        if not slew_response:
+        # '#' means no slew is active.
+        if slew_response != "#":
 
             raise RuntimeError(
-                "Cannot nudge: mount movement has not completed"
+                "Cannot nudge: mount is still slewing"
             )
 
-
         # ------------------------------------------------------------
-        # Calculate nudge
+        # Calculate offset
         # ------------------------------------------------------------
 
         direction = direction.lower()
@@ -466,9 +468,19 @@ class MountController:
                 f"Invalid nudge direction: {direction}"
             )
 
+        self.logger.info(
+            (
+                "Sending mount nudge: "
+                f"direction={direction}, "
+                f"RA offset={ra_offset}, "
+                f"Dec offset={dec_offset}, "
+                f"state={mount_status}"
+            ),
+            source="MOUNT",
+        )
 
         # ------------------------------------------------------------
-        # Send nudge
+        # Send NUDGE
         # ------------------------------------------------------------
 
         response = self.mount.nudge_offset(
@@ -476,17 +488,45 @@ class MountController:
             dec_offset
         )
 
+        response_text = (
+            str(response)
+            .strip()
+        )
+
         self.logger.info(
             (
                 f"Mount nudge {direction}: "
                 f"{step_arcsec} arcsec "
-                f"(response: {response})"
+                f"(response: {response_text!r})"
             ),
             source="MOUNT",
         )
 
-        return response
+        if response_text.startswith("1"):
 
+            raise RuntimeError(
+                "Mount rejected nudge: target below horizon"
+            )
+
+        if response_text.startswith("2"):
+
+            raise RuntimeError(
+                "Mount rejected nudge: target above upper limit"
+            )
+
+        if response_text.startswith("3"):
+
+            raise RuntimeError(
+                "Mount rejected nudge: cannot perform nudge"
+            )
+
+        if not response_text.startswith("0"):
+
+            raise RuntimeError(
+                f"Unexpected nudge response: {response_text!r}"
+            )
+
+        return True
     # ============================================================
     # Slewing / tracking
     # ============================================================

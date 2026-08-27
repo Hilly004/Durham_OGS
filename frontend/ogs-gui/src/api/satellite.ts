@@ -65,6 +65,24 @@ export interface StopTrackingResponse {
 }
 
 
+export type SatelliteCorrectionDirection =
+    | "north"
+    | "south"
+    | "east"
+    | "west";
+
+
+export interface SatelliteCorrectionResponse {
+    success: boolean;
+
+    data: {
+        direction: SatelliteCorrectionDirection;
+        duration_ms: number;
+        message: string;
+    };
+}
+
+
 /*
  * Get all stored satellites
  */
@@ -275,6 +293,65 @@ predictSatellitePass(
 
         } catch {
             // Keep default
+        }
+
+
+        throw new Error(
+            message
+        );
+    }
+
+
+    return response.json();
+}
+
+
+/*
+ * Apply a short directional correction while the
+ * TenMicron is following a satellite trajectory.
+ */
+export async function correctSatelliteTrajectory(
+    direction: SatelliteCorrectionDirection,
+    durationMs: number
+): Promise<SatelliteCorrectionResponse> {
+
+    const response = await fetch(
+        "/api/satellites/tracking/correction",
+        {
+            method: "POST",
+
+            headers: {
+                "Content-Type":
+                    "application/json",
+            },
+
+            body: JSON.stringify({
+                direction,
+                duration_ms:
+                    durationMs,
+            }),
+        }
+    );
+
+
+    if (!response.ok) {
+
+        let message =
+            "Satellite trajectory correction failed";
+
+
+        try {
+
+            const error =
+                await response.json();
+
+            message =
+                error.detail
+                ??
+                message;
+
+        } catch {
+            // Keep default message
         }
 
 

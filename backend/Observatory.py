@@ -227,20 +227,36 @@ class ObservatoryController:
             step_arcsec
         )
 
-        return True
     
     def move_mount(
-            self,
-            direction: str,
+        self,
+        direction: str,
     ):
+
         if not self.safety.can_start_observing():
+
             self.logger.warning(
-                'Mount movement prevented by safety system',
-                source='MOUNT'
+                "Mount movement prevented by safety system",
+                source="MOUNT"
             )
 
             return False
 
-        self.mount.move(direction)
+        if direction == "north":
+            self.mount.move_north()
+
+        elif direction == "south":
+            self.mount.move_south()
+
+        elif direction == "east":
+            self.mount.move_east()
+
+        elif direction == "west":
+            self.mount.move_west()
+
+        else:
+            raise ValueError(
+                f"Invalid mount direction: {direction}"
+            )
 
         return True

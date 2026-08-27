@@ -1,6 +1,6 @@
 import {
     useObservatoryStatus,
-} from "../../context/ObservatoryStatusContext";
+} from "../../context/useObservatoryStatus";
 
 import DashboardStatusCard
     from "../Common/DashboardStatusCard";
