@@ -20,6 +20,7 @@ import type {
     SatelliteCorrectionDirection,
 } from "../../api/satellite";
 
+import Card from '../Common/Card'
 
 const DURATION_OPTIONS = [
     50,
@@ -238,14 +239,7 @@ export default function TrajectoryAdjustment() {
 
 
     return (
-        <div
-            className="
-                rounded-xl
-                border
-                border-slate-800
-                bg-slate-900
-            "
-        >
+        <Card>
             <div
                 className="
                     flex
@@ -538,6 +532,6 @@ export default function TrajectoryAdjustment() {
                     </div>
                 )}
             </div>
-        </div>
+        </Card>
     );
 }

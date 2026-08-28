@@ -24,7 +24,7 @@ export default function DomeStatusWidget() {
                 ? "Fault"
                 : status.moving
                     ? "Moving"
-                    : status.isOpen
+                    : status.open
                         ? "Open"
                         : "Closed";
 
@@ -55,7 +55,7 @@ export default function DomeStatusWidget() {
                     label="Open"
                     value={
                         status?.connected
-                            ? status.isOpen
+                            ? status.open
                                 ? "Yes"
                                 : "No"
                             : "--"

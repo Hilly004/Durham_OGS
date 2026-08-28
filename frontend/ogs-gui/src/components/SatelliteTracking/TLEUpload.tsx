@@ -13,6 +13,7 @@ import {
     createSatellite,
 } from "../../api/satellite";
 
+import Card from '../Common/Card'
 
 interface TLEUploadProps {
     onClose: () => void;
@@ -167,15 +168,7 @@ export default function TLEUpload({
 
 
     return (
-        <div
-            className="
-                rounded-xl
-                border
-                border-slate-800
-                bg-slate-900
-                p-5
-            "
-        >
+        <Card className="p-5">
 
             {/* Header */}
             <div
@@ -506,6 +499,6 @@ export default function TLEUpload({
 
             </form>
 
-        </div>
+        </Card>
     );
 }

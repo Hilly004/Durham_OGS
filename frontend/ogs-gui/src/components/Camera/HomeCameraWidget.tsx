@@ -40,9 +40,19 @@ export default function HomeCameraWidget() {
     ] = useState(0);
 
 
+    const [
+        streamVersion,
+        setStreamVersion,
+    ] = useState(0);
+
+
     /*
      * Refresh displayed image while
      * live acquisition is running.
+     *
+     * A unique streamVersion prevents
+     * the browser reusing frames from
+     * an earlier camera session.
      *
      * 200 ms = approximately 5 FPS
      * on the dashboard.
@@ -50,11 +60,22 @@ export default function HomeCameraWidget() {
     useEffect(() => {
 
         if (
-            !status.connected ||
+            !status.connected
+            ||
             !status.streaming
         ) {
+
+            setFrameVersion(0);
+
             return;
         }
+
+
+        setStreamVersion(
+            Date.now()
+        );
+
+        setFrameVersion(0);
 
 
         const timer =
@@ -72,7 +93,11 @@ export default function HomeCameraWidget() {
 
 
         return () => {
-            window.clearInterval(timer);
+
+            window.clearInterval(
+                timer
+            );
+
         };
 
     }, [
@@ -80,8 +105,15 @@ export default function HomeCameraWidget() {
         status.streaming,
     ]);
 
+
     const frameUrl =
-        `/api/camera/frame?v=${frameVersion}`;
+        (
+            "/api/camera/frame"
+            +
+            `?session=${streamVersion}`
+            +
+            `&frame=${frameVersion}`
+        );
 
 
     return (
@@ -117,93 +149,116 @@ export default function HomeCameraWidget() {
                     "
                 >
 
-                    {status.connected ? (
+                    {
+                        status.connected
+                        &&
+                        status.streaming
+                            ? (
 
-                        <img
-                            key={frameVersion}
-                            src={frameUrl}
-                            alt="Allied Vision camera"
+                                <img
+                                    key={
+                                        `${streamVersion}-${frameVersion}`
+                                    }
 
-                            className="
-                                h-full
-                                w-full
-                                object-contain
-                            "
-                        />
+                                    src={
+                                        frameUrl
+                                    }
 
-                    ) : (
+                                    alt="Camera live view"
 
-                        <div
-                            className="
-                                text-center
-                            "
-                        >
+                                    className="
+                                        h-full
+                                        w-full
+                                        object-contain
+                                    "
+                                />
 
-                            <Camera
-                                size={42}
-                                className="
-                                    mx-auto
-                                    mb-2
-                                    text-slate-700
-                                "
-                            />
+                            )
+                            : (
 
-                            <p
-                                className="
-                                    text-sm
-                                    text-slate-400
-                                "
-                            >
-                                Camera not connected
-                            </p>
+                                <div
+                                    className="
+                                        text-center
+                                    "
+                                >
 
-                        </div>
+                                    <Camera
+                                        size={42}
 
-                    )}
+                                        className="
+                                            mx-auto
+                                            mb-2
+                                            text-slate-700
+                                        "
+                                    />
+
+                                    <p
+                                        className="
+                                            text-sm
+                                            text-slate-400
+                                        "
+                                    >
+                                        {
+                                            status.connected
+                                                ? "Live view not running"
+                                                : "Camera not connected"
+                                        }
+                                    </p>
+
+                                </div>
+
+                            )
+                    }
 
 
                     {/* Live indicator */}
 
-                    {status.streaming && (
+                    {
+                        status.connected
+                        &&
+                        status.streaming
+                        &&
+                        (
 
-                        <div
-                            className="
-                                absolute
-                                left-3
-                                top-3
-                                flex
-                                items-center
-                                gap-2
-                                rounded-md
-                                bg-slate-950/80
-                                px-2.5
-                                py-1.5
-                            "
-                        >
-
-                            <span
+                            <div
                                 className="
-                                    h-2
-                                    w-2
-                                    animate-pulse
-                                    rounded-full
-                                    bg-red-500
-                                "
-                            />
-
-                            <span
-                                className="
-                                    text-xs
-                                    font-medium
-                                    text-slate-200
+                                    absolute
+                                    left-3
+                                    top-3
+                                    flex
+                                    items-center
+                                    gap-2
+                                    rounded-md
+                                    bg-slate-950/80
+                                    px-2.5
+                                    py-1.5
                                 "
                             >
-                                LIVE
-                            </span>
 
-                        </div>
+                                <span
+                                    className="
+                                        h-2
+                                        w-2
+                                        animate-pulse
+                                        rounded-full
+                                        bg-red-500
+                                    "
+                                />
 
-                    )}
+                                <span
+                                    className="
+                                        text-xs
+                                        font-medium
+                                        text-slate-200
+                                    "
+                                >
+                                    LIVE
+                                </span>
+
+                            </div>
+
+                        )
+                    }
 
                 </div>
 

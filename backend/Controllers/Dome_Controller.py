@@ -686,3 +686,114 @@ class DomeController:
             )
 
             raise
+
+    def stop_all(self):
+
+        if not self.is_connected:
+            raise ConnectionError(
+                "Dome not connected"
+            )
+
+        try:
+
+            result = self.dome.stop_all()
+
+            self.logger.warning(
+                "Dome movement stopped",
+                source="DOME"
+            )
+
+            return result
+
+        except Exception as e:
+
+            self.logger.error(
+                f"Dome stop failed: {e}",
+                source="DOME"
+            )
+
+            raise
+
+
+    def stop_left(self):
+
+        if not self.is_connected:
+            raise ConnectionError(
+                "Dome not connected"
+            )
+
+        try:
+
+            result = self.dome.stop_left()
+
+            self.logger.info(
+                "Left dome shutter stopped",
+                source="DOME"
+            )
+
+            return result
+
+        except Exception as e:
+
+            self.logger.error(
+                f"Left dome stop failed: {e}",
+                source="DOME"
+            )
+
+            raise
+
+
+    def stop_right(self):
+
+        if not self.is_connected:
+            raise ConnectionError(
+                "Dome not connected"
+            )
+
+        try:
+
+            result = self.dome.stop_right()
+
+            self.logger.info(
+                "Right dome shutter stopped",
+                source="DOME"
+            )
+
+            return result
+
+        except Exception as e:
+
+            self.logger.error(
+                f"Right dome stop failed: {e}",
+                source="DOME"
+            )
+
+            raise
+
+
+    def reset_fault(self):
+
+        if not self.is_connected:
+            raise ConnectionError(
+                "Dome not connected"
+            )
+
+        try:
+
+            result = self.dome.fault_reset()
+
+            self.logger.info(
+                "Dome fault reset requested",
+                source="DOME"
+            )
+
+            return result
+
+        except Exception as e:
+
+            self.logger.error(
+                f"Dome fault reset failed: {e}",
+                source="DOME"
+            )
+
+            raise

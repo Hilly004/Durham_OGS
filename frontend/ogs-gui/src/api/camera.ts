@@ -76,8 +76,11 @@ Promise<CameraStatusData> {
 
     }
 
-    const result: CameraStatusResponse =
-        await response.json();
+
+    const result:
+        CameraStatusResponse =
+            await response.json();
+
 
     return result.data;
 }
@@ -92,6 +95,7 @@ Promise<void> {
             method: "POST",
         }
     );
+
 
     if (!response.ok) {
 
@@ -116,6 +120,7 @@ Promise<void> {
         }
     );
 
+
     if (!response.ok) {
 
         throw new Error(
@@ -128,9 +133,22 @@ Promise<void> {
     }
 }
 
-export function getCameraLiveUrl(): string {
+
+export function getCameraLiveUrl():
+string {
+
     return "/api/camera/live";
 }
+
+
+export function getCameraFrameUrl():
+string {
+
+    return (
+        `/api/camera/frame?v=${Date.now()}`
+    );
+}
+
 
 export async function startCameraStream():
 Promise<void> {
@@ -141,6 +159,7 @@ Promise<void> {
             method: "POST",
         }
     );
+
 
     if (!response.ok) {
 
@@ -165,6 +184,7 @@ Promise<void> {
         }
     );
 
+
     if (!response.ok) {
 
         throw new Error(
@@ -185,6 +205,7 @@ Promise<StreamStatusResponse> {
         "/api/camera/stream/status"
     );
 
+
     if (!response.ok) {
 
         throw new Error(
@@ -195,6 +216,7 @@ Promise<StreamStatusResponse> {
         );
 
     }
+
 
     return response.json();
 }
@@ -210,14 +232,17 @@ export async function setCameraExposure(
             method: "POST",
 
             headers: {
-                "Content-Type": "application/json",
+                "Content-Type":
+                    "application/json",
             },
 
             body: JSON.stringify({
-                exposure_us: exposureUs,
+                exposure_us:
+                    exposureUs,
             }),
         }
     );
+
 
     if (!response.ok) {
 
@@ -252,6 +277,7 @@ export async function setCameraGain(
         }
     );
 
+
     if (!response.ok) {
 
         throw new Error(
@@ -262,4 +288,59 @@ export async function setCameraGain(
         );
 
     }
+}
+
+
+export async function setCameraFrameRate(
+    fps: number
+): Promise<void> {
+
+    const response = await fetch(
+        "/api/camera/frame-rate",
+        {
+            method: "POST",
+
+            headers: {
+                "Content-Type":
+                    "application/json",
+            },
+
+            body: JSON.stringify({
+                fps,
+            }),
+        }
+    );
+
+
+    if (!response.ok) {
+
+        throw new Error(
+            await getErrorMessage(
+                response,
+                "Failed to set camera frame rate"
+            )
+        );
+
+    }
+}
+
+export async function captureCameraFrame():
+Promise<Blob> {
+
+    const response = await fetch(
+        getCameraFrameUrl()
+    );
+
+    if (!response.ok) {
+
+        throw new Error(
+            await getErrorMessage(
+                response,
+                "Unable to capture frame"
+            )
+        );
+
+    }
+
+    return response.blob();
 }

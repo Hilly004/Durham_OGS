@@ -1,111 +1,189 @@
 export interface DomeStatusData {
     connected: boolean;
-    isOpen: boolean;
+    open: boolean;
+    closed: boolean;
+    opening: boolean;
+    closing: boolean;
     moving: boolean;
     fault: boolean;
 }
 
-interface ApiResponse {
+
+interface DomeStatusResponse {
     success: boolean;
     data: DomeStatusData;
 }
 
-export async function getDomeStatus(): Promise<DomeStatusData> {
 
-    const response = await fetch('/api/dome/status');
+async function getErrorMessage(
+    response: Response,
+    fallback: string
+): Promise<string> {
+
+    try {
+
+        const data =
+            await response.json();
+
+        return (
+            typeof data?.detail === "string"
+                ? data.detail
+                : fallback
+        );
+
+    } catch {
+
+        return fallback;
+
+    }
+}
+
+
+async function domePost(
+    endpoint: string,
+    fallback: string
+): Promise<void> {
+
+    const response =
+        await fetch(
+            `/api/dome/${endpoint}`,
+            {
+                method: "POST",
+            }
+        );
+
 
     if (!response.ok) {
-        throw new Error('Failed to get dome status');
+
+        const message =
+            await getErrorMessage(
+                response,
+                fallback
+            );
+
+        throw new Error(message);
+
     }
 
-    const result: ApiResponse = await response.json();
+}
+
+
+export async function getDomeStatus():
+Promise<DomeStatusData> {
+
+    const response =
+        await fetch(
+            "/api/dome/status"
+        );
+
+
+    if (!response.ok) {
+
+        const message =
+            await getErrorMessage(
+                response,
+                "Failed to get dome status"
+            );
+
+        throw new Error(message);
+
+    }
+
+
+    const result:
+        DomeStatusResponse =
+            await response.json();
+
+
     return result.data;
+
 }
 
-export async function openDome(): Promise<void> {
 
-    const response = await fetch("/api/dome/open", {
-        method: "POST"
-    });
+export function connectDome():
+Promise<void> {
 
-    if (!response.ok) {
-        throw new Error("Failed to open dome");
-    }
+    return domePost(
+        "connect",
+        "Failed to connect dome"
+    );
+
 }
 
-export async function closeDome(): Promise<void> {
 
-    const response = await fetch("/api/dome/close", {
-        method: "POST"
-    });
+export function disconnectDome():
+Promise<void> {
 
-    if (!response.ok) {
-        throw new Error("Failed to close dome");
-    }
+    return domePost(
+        "disconnect",
+        "Failed to disconnect dome"
+    );
+
 }
 
-export async function connectDome(): Promise<void> {
 
-    const response = await fetch("/api/dome/connect", {
-        method: "POST"
-    });
+export function openDome():
+Promise<void> {
 
-    if (!response.ok) {
-        throw new Error("Failed to connect dome");
-    }
+    return domePost(
+        "open",
+        "Failed to open dome"
+    );
+
 }
 
-export async function disconnectDome(): Promise<void> {
 
-    const response = await fetch("/api/dome/disconnect", {
-        method: "POST"
-    });
+export function closeDome():
+Promise<void> {
 
-    if (!response.ok) {
-        throw new Error("Failed to disconnect dome");
-    }
+    return domePost(
+        "close",
+        "Failed to close dome"
+    );
+
 }
 
-export async function closeDomeOne(): Promise<void> {
-    
-    const response = await fetch("/api/dome/close_one", {
-        method: "POST"
-    });
 
-    if (!response.ok) {
-        throw new Error("Failed to close dome one");
-    }
+export function openDomeOne():
+Promise<void> {
+
+    return domePost(
+        "open_one",
+        "Failed to open left shutter"
+    );
+
 }
 
-export async function closeDomeTwo(): Promise<void> {
-    
-    const response = await fetch("/api/dome/close_two", {
-        method: "POST"
-    });
 
-    if (!response.ok) {
-        throw new Error("Failed to close dome two");
-    }
+export function closeDomeOne():
+Promise<void> {
+
+    return domePost(
+        "close_one",
+        "Failed to close left shutter"
+    );
+
 }
 
-export async function openDomeOne(): Promise<void> {
-    
-    const response = await fetch("/api/dome/open_one", {
-        method: "POST"
-    }); 
 
-    if (!response.ok) {
-        throw new Error("Failed to open dome one");
-    }
+export function openDomeTwo():
+Promise<void> {
+
+    return domePost(
+        "open_two",
+        "Failed to open right shutter"
+    );
+
 }
 
-export async function openDomeTwo(): Promise<void> {
-    
-    const response = await fetch("/api/dome/open_two", {
-        method: "POST"
-    });
 
-    if (!response.ok) {
-        throw new Error("Failed to open dome two");
-    }
-}   
+export function closeDomeTwo():
+Promise<void> {
+
+    return domePost(
+        "close_two",
+        "Failed to close right shutter"
+    );
+
+}
+

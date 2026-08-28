@@ -30,6 +30,7 @@ import type {
     AlignmentData,
 } from "../../api/mount_setup";
 
+import Card from '../Common/Card'
 
 type AlignmentStep =
     | "target"
@@ -771,15 +772,10 @@ MountAlignmentSettings() {
 
     return (
 
-        <section
-            className="
-                space-y-6
-                rounded-xl
-                border
-                border-slate-800
-                bg-slate-900/40
-                p-5
-            "
+        <Card
+            as="section"
+            variant="soft"
+            className="space-y-5"
         >
 
             <div>
@@ -2330,6 +2326,6 @@ MountAlignmentSettings() {
                 )
             }
 
-        </section>
+        </Card>
     );
 }

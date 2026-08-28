@@ -22,6 +22,7 @@ import type {
     ObservatorySettings,
 } from "../../api/settings";
 
+import Card from '../Common/Card'
 
 interface Props {
     settings: ObservatorySettings;
@@ -182,17 +183,11 @@ export default function MountSetupSettings({
 
     return (
 
-        <section
-            className="
-                space-y-5
-                rounded-xl
-                border
-                border-slate-800
-                bg-slate-900/40
-                p-5
-            "
+        <Card
+            as="section"
+            variant="soft"
+            className="space-y-5"
         >
-
             <h2
                 className="
                     text-lg
@@ -514,7 +509,7 @@ export default function MountSetupSettings({
 
             )}
 
-        </section>
+        </Card>
 
     );
 

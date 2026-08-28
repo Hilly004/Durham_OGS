@@ -4,10 +4,15 @@ interface Props {
     settings: ObservatorySettings;
     onChange: (key: keyof ObservatorySettings, value: string | number | boolean) => void;
 }
+import Card from '../Common/Card'
 
 export default function ObservatorySettingsSection({ settings, onChange }: Props) {
     return (
-        <section className="rounded-xl border border-slate-800 bg-slate-900/40 p-5">
+        <Card
+            as="section"
+            variant="soft"
+            className="space-y-5"
+        >
             <h2 className="mb-4 text-lg font-semibold text-slate-100">Observatory</h2>
             <div className="grid gap-4 md:grid-cols-2">
                 <label className="text-sm text-slate-300">Site name
@@ -23,6 +28,6 @@ export default function ObservatorySettingsSection({ settings, onChange }: Props
                     <input type="number" step="0.000001" className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2" value={settings.longitude} onChange={e => onChange("longitude", Number(e.target.value))} />
                 </label>
             </div>
-        </section>
+        </Card>
     );
 }

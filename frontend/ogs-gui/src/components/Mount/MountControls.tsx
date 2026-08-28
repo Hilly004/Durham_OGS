@@ -28,6 +28,7 @@ import type {
     NudgeStepSizes,
 } from "../../api/mount";
 
+import Card from '../Common/Card'
 
 interface MountControlsProps {
     connected: boolean;
@@ -500,17 +501,13 @@ export default function MountControls({
     }
 
     return (
-        <div
+        <Card
             className="
                 flex
                 h-full
                 w-full
                 flex-col
                 overflow-hidden
-                rounded-xl
-                border
-                border-slate-800
-                bg-slate-900
             "
         >
 
@@ -1374,6 +1371,6 @@ export default function MountControls({
 
             </div>
 
-        </div>
+        </Card>
     );
 }

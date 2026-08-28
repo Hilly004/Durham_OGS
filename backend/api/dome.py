@@ -180,3 +180,69 @@ def close_two():
         'success': result is not False
     }
 
+@router.post("/stop")
+def stop_dome():
+    dome_controller = get_controller()
+
+    if not dome_controller.is_connected:
+        raise HTTPException(
+            status_code=503,
+            detail="Dome not connected"
+        )
+
+    dome_controller.stop_all()
+
+    return {
+        "success": True
+    }
+
+
+@router.post("/stop_left")
+def stop_left():
+    dome_controller = get_controller()
+
+    if not dome_controller.is_connected:
+        raise HTTPException(
+            status_code=503,
+            detail="Dome not connected"
+        )
+
+    dome_controller.stop_left()
+
+    return {
+        "success": True
+    }
+
+
+@router.post("/stop_right")
+def stop_right():
+    dome_controller = get_controller()
+
+    if not dome_controller.is_connected:
+        raise HTTPException(
+            status_code=503,
+            detail="Dome not connected"
+        )
+
+    dome_controller.stop_right()
+
+    return {
+        "success": True
+    }
+
+
+@router.post("/fault_reset")
+def fault_reset():
+    dome_controller = get_controller()
+
+    if not dome_controller.is_connected:
+        raise HTTPException(
+            status_code=503,
+            detail="Dome not connected"
+        )
+
+    dome_controller.reset_fault()
+
+    return {
+        "success": True
+    }

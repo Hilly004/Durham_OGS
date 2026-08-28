@@ -2,8 +2,11 @@ import {
     useState,
 } from "react";
 
-import DomeControls from "../components/Dome/DomeControls";
-import DomeStatus from "../components/Dome/DomeStatus";
+import DomeControls
+    from "../components/Dome/DomeControls";
+
+import DomeStatus
+    from "../components/Dome/DomeStatus";
 
 import {
     connectDome,
@@ -24,21 +27,36 @@ export default function DomePage() {
         useObservatoryStatus();
 
 
-    const [loading, setLoading] =
-        useState(false);
+    const [
+        loading,
+        setLoading,
+    ] = useState(false);
 
 
     async function handleConnection() {
 
+        if (loading) {
+            return;
+        }
+
+
         setLoading(true);
+
 
         try {
 
             if (status?.connected) {
+
                 await disconnectDome();
+
             } else {
+
                 await connectDome();
+
             }
+
+
+            await refresh();
 
         } catch (error) {
 
@@ -48,8 +66,6 @@ export default function DomePage() {
             );
 
         } finally {
-
-            await refresh();
 
             setLoading(false);
 
@@ -92,18 +108,34 @@ export default function DomePage() {
                         Dome Control
                     </h1>
 
-                    <p className="text-sm text-slate-400">
+                    <p
+                        className="
+                            text-sm
+                            text-slate-400
+                        "
+                    >
                         AstroHaven enclosure control and monitoring
                     </p>
 
                 </div>
 
 
-                <div className="flex items-center gap-3">
+                <div
+                    className="
+                        flex
+                        items-center
+                        gap-3
+                    "
+                >
 
                     <button
-                        onClick={handleConnection}
-                        disabled={loading}
+                        type="button"
+                        onClick={
+                            handleConnection
+                        }
+                        disabled={
+                            loading
+                        }
                         className="
                             rounded-lg
                             border
@@ -120,11 +152,13 @@ export default function DomePage() {
                             disabled:opacity-50
                         "
                     >
+
                         {loading
                             ? "Working..."
                             : status?.connected
                                 ? "Disconnect"
                                 : "Connect"}
+
                     </button>
 
 
@@ -155,7 +189,13 @@ export default function DomePage() {
                             `}
                         />
 
-                        <span className="text-sm text-slate-300">
+
+                        <span
+                            className="
+                                text-sm
+                                text-slate-300
+                            "
+                        >
                             {status?.connected
                                 ? "Connected"
                                 : "Disconnected"}
@@ -179,6 +219,7 @@ export default function DomePage() {
                 "
             >
 
+                {/* Dome Status */}
                 <div
                     className="
                         col-span-5
@@ -186,10 +227,13 @@ export default function DomePage() {
                         overflow-hidden
                     "
                 >
+
                     <DomeStatus />
+
                 </div>
 
 
+                {/* Dome Controls */}
                 <div
                     className="
                         col-span-7
@@ -197,7 +241,14 @@ export default function DomePage() {
                         overflow-hidden
                     "
                 >
-                    <DomeControls />
+
+                    <DomeControls
+                        connected={
+                            status?.connected
+                            ?? false
+                        }
+                    />
+
                 </div>
 
             </div>
